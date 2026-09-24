@@ -36,11 +36,14 @@
 
   * { box-sizing: border-box; }
   body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); padding: 0 16px; }
-  .wrap { max-width: 900px; margin: 0 auto; padding-block: 28px 48px; display: grid; gap: 20px; }
+  .wrap { max-width: 900px; margin: 0 auto; padding-block: 28px 48px; display: grid; gap: 18px; }
 
   header { display: grid; gap: 6px; }
   h1 { margin: 0; font: 700 clamp(28px, 6vw, 38px)/1.1 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
   header p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+  .formats { display: flex; gap: 6px; flex-wrap: wrap; }
+  .formats button { font-size: 13px; }
 
   .panes { display: grid; gap: 12px; }
   .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 10px; padding: 14px; min-width: 0; }
@@ -56,20 +59,20 @@
   button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 
   textarea {
-    width: 100%; min-height: 150px; resize: vertical; padding: 12px;
+    width: 100%; min-height: 140px; resize: vertical; padding: 12px;
     background: var(--sunken); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
-    font: 15px/1.6 var(--mono); letter-spacing: .01em;
+    font: 15px/1.6 var(--mono); letter-spacing: .01em; word-break: break-word;
   }
   textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  #text { font-family: var(--body); font-size: 15px; letter-spacing: 0; }
+  #text { font-family: var(--body); letter-spacing: 0; }
 
   .swap { display: flex; justify-content: center; }
-  .swap button { border-radius: 999px; padding: 9px 18px; font-weight: 500; }
+  .swap button { border-radius: 999px; padding: 9px 18px; }
 
-  .status { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
-  .status .num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+  .status { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; font-family: var(--mono); }
   .err { color: var(--bad); background: var(--bad-soft); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
-  .err[hidden] { display: none; }
+  .note { font-size: 13px; color: var(--muted); }
+  [hidden] { display: none !important; }
 
   .opts { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
   .opts label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
@@ -82,17 +85,20 @@
   details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
   summary { font: 500 15px/1.3 var(--display); cursor: pointer; }
   details table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-  details td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--line); }
+  details td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   details td:first-child { font-family: var(--mono); color: var(--accent); white-space: nowrap; }
   details p { color: var(--muted); max-width: 64ch; }
   .scroll { overflow-x: auto; }
+  code { font-family: var(--mono); font-size: .92em; }
 </style>
 
 <div class="wrap">
   <header>
     <h1>Hex Translator</h1>
-    <p>Type in either box. Text becomes hex as you type, and hex becomes text the same way. Works with letters, emoji and any other character.</p>
+    <p>Type in either box and the other one keeps up. Pick a format for the bottom box: hex, binary, decimal, octal, Base64, Base85, Morse or leetspeak.</p>
   </header>
+
+  <div class="formats" role="group" aria-label="Format" id="formats"></div>
 
   <div class="panes">
     <section class="pane">
@@ -104,21 +110,21 @@
         </div>
       </div>
       <textarea id="text" spellcheck="false" placeholder="Type anything here…">Hello</textarea>
-      <div class="status"><span class="num" id="textStat">5 characters · 5 bytes</span></div>
+      <div class="status" id="textStat"></div>
     </section>
 
     <div class="swap"><button type="button" id="swap">↕ Swap sides</button></div>
 
     <section class="pane">
       <div class="pane-head">
-        <h2>Hex</h2>
+        <h2 id="outLabel">Hex</h2>
         <div class="tools">
-          <button type="button" id="copyHex">Copy</button>
-          <button type="button" id="clearHex">Clear</button>
+          <button type="button" id="copyOut">Copy</button>
+          <button type="button" id="clearOut">Clear</button>
         </div>
       </div>
-      <textarea id="hex" spellcheck="false" placeholder="48 65 6C 6C 6F"></textarea>
-      <div class="opts">
+      <textarea id="out" spellcheck="false"></textarea>
+      <div class="opts" id="opts">
         <label><input type="checkbox" id="upper" checked> Uppercase</label>
         <label>Separator
           <select id="sep">
@@ -129,16 +135,33 @@
             <option value="\n">one per line</option>
           </select>
         </label>
-        <label><input type="checkbox" id="prefix"> 0x prefix</label>
+        <label id="prefixWrap"><input type="checkbox" id="prefix"> 0x prefix</label>
       </div>
-      <div class="status"><span class="num" id="hexStat">5 bytes</span></div>
+      <div class="status" id="outStat"></div>
+      <div class="note" id="note" hidden></div>
       <div class="err" id="err" hidden></div>
     </section>
   </div>
 
   <details>
+    <summary>What each format is</summary>
+    <div class="scroll">
+      <table>
+        <tr><td>Hex</td><td>Each byte as two digits, 0–9 and a–f. <code>Hi</code> → <code>48 69</code></td></tr>
+        <tr><td>Binary</td><td>Each byte as eight 1s and 0s. <code>Hi</code> → <code>01001000 01101001</code></td></tr>
+        <tr><td>Decimal</td><td>Each byte as a plain number, 0–255. <code>Hi</code> → <code>72 105</code></td></tr>
+        <tr><td>Octal</td><td>Base 8, the old Unix way. <code>Hi</code> → <code>110 151</code></td></tr>
+        <tr><td>Base64</td><td>The compact form used for email attachments and data URLs. <code>Hi</code> → <code>SGk=</code></td></tr>
+        <tr><td>Base85</td><td>Shorter than Base64, with a bigger set of characters. <code>Hi</code> → <code>NW0</code></td></tr>
+        <tr><td>Morse</td><td>Dots and dashes. Letters, digits and basic punctuation only. <code>Hi</code> → <code>.... ..</code></td></tr>
+        <tr><td>Leet</td><td>Letter swaps, not a real encoding: o→0, l/i→1, s→5, t→7, g→6, e→3, a→4, b→8, z→2</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
     <summary>Hexspeak: words you can spell in hex</summary>
-    <p>Hex only has 0–9 and a–f, so words get spelled with digits standing in for letters. These are the common swaps.</p>
+    <p>Hex only has 0–9 and a–f, so words get spelled with digits standing in for letters.</p>
     <div class="scroll">
       <table>
         <tr><td>0</td><td>o</td><td>c0c0a → cocoa</td></tr>
@@ -146,92 +169,245 @@
         <tr><td>5</td><td>s</td><td>5ace → sace</td></tr>
         <tr><td>6</td><td>g</td><td>60dde55 → goddess</td></tr>
         <tr><td>7</td><td>t</td><td>7a57e → taste</td></tr>
-        <tr><td>2</td><td>z</td><td>2e5t → zest</td></tr>
-        <tr><td>8</td><td>b (loosely)</td><td>8ad → bad</td></tr>
       </table>
     </div>
-    <p>Letters with no stand-in — h, k, m, n, p, q, r, u, v, w, x, y — can't be written in real hex at all.</p>
-  </details>
-
-  <details>
-    <summary>How the conversion works</summary>
-    <p>Each character is turned into bytes using UTF-8, then each byte is written as two hex digits. Plain English characters take one byte each, so <code>A</code> is <code>41</code>. Accented letters and emoji take more: <code>é</code> is <code>C3 A9</code> and 🔥 is <code>F0 9F 94 A5</code>.</p>
-      <p>Going the other way, the hex box ignores spaces, dashes, colons, line breaks and <code>0x</code> prefixes, so you can paste hex in almost any format. It needs an even number of digits, since every byte is two.</p>
+    <p>Letters with no stand-in — h, k, m, n, p, q, r, u, v, w, x, y — can't be written in real hex at all. The Leet format above is looser and keeps them as they are.</p>
   </details>
 </div>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const text = $("text"), hex = $("hex"), err = $("err");
+  const text = $("text"), out = $("out"), err = $("err"), note = $("note");
   const upper = $("upper"), sep = $("sep"), prefix = $("prefix");
-  const enc = new TextEncoder(), dec = new TextDecoder("utf-8", { fatal: true });
-  let editing = null;
+  const enc = new TextEncoder();
+  const decStrict = new TextDecoder("utf-8", { fatal: true });
+  const decLoose = new TextDecoder("utf-8");
+
+  const MORSE = {
+    a: ".-", b: "-...", c: "-.-.", d: "-..", e: ".", f: "..-.", g: "--.", h: "....",
+    i: "..", j: ".---", k: "-.-", l: ".-..", m: "--", n: "-.", o: "---", p: ".--.",
+    q: "--.-", r: ".-.", s: "...", t: "-", u: "..-", v: "...-", w: ".--", x: "-..-",
+    y: "-.--", z: "--..", 0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-",
+    5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----.", ".": ".-.-.-",
+    ",": "--..--", "?": "..--..", "'": ".----.", "!": "-.-.--", "/": "-..-.",
+    "(": "-.--.", ")": "-.--.-", "&": ".-...", ":": "---...", ";": "-.-.-.",
+    "=": "-...-", "+": ".-.-.", "-": "-....-", "_": "..--.-", '"': ".-..-.",
+    "$": "...-..-", "@": ".--.-."
+  };
+  const UNMORSE = Object.fromEntries(Object.entries(MORSE).map(([k, v]) => [v, k]));
+  const LEET = { o: "0", l: "1", i: "1", s: "5", t: "7", g: "6", e: "3", a: "4", b: "8", z: "2" };
+  const UNLEET = { 0: "o", 1: "l", 5: "s", 7: "t", 6: "g", 3: "e", 4: "a", 8: "b", 2: "z" };
+  const B85 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~";
+
+  const FORMATS = {
+    hex:    { label: "Hex",     radix: 16, pad: 2, byteWise: true },
+    binary: { label: "Binary",  radix: 2,  pad: 8, byteWise: true },
+    decimal:{ label: "Decimal", radix: 10, pad: 0, byteWise: true },
+    octal:  { label: "Octal",   radix: 8,  pad: 0, byteWise: true },
+    base64: { label: "Base64" },
+    base85: { label: "Base85" },
+    morse:  { label: "Morse" },
+    leet:   { label: "Leet" }
+  };
+  let fmt = "hex";
 
   function sepChar() { return sep.value === "\\n" ? "\n" : sep.value; }
 
-  function toHex(s) {
-    const bytes = enc.encode(s);
-    const p = prefix.checked ? "0x" : "";
+  // ---- encoders -------------------------------------------------------
+  function bytesToDigits(bytes) {
+    const f = FORMATS[fmt], p = (fmt === "hex" && prefix.checked) ? "0x" : "";
     return [...bytes].map(b => {
-      const h = b.toString(16).padStart(2, "0");
-      return p + (upper.checked ? h.toUpperCase() : h);
+      let s = b.toString(f.radix).padStart(f.pad, "0");
+      if (fmt === "hex" && upper.checked) s = s.toUpperCase();
+      return p + s;
     }).join(sepChar());
   }
+  function toBase64(bytes) {
+    let bin = ""; for (const b of bytes) bin += String.fromCharCode(b);
+    return btoa(bin);
+  }
+  function toBase85(bytes) {
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 4) {
+      const chunk = bytes.slice(i, i + 4), n = chunk.length;
+      let v = 0;
+      for (let j = 0; j < 4; j++) v = v * 256 + (chunk[j] || 0);
+      const five = [];
+      for (let j = 0; j < 5; j++) { five.unshift(B85[v % 85]); v = Math.floor(v / 85); }
+      s += five.slice(0, n + 1).join("");
+    }
+    return s;
+  }
+  function toMorse(str) {
+    const skipped = new Set();
+    const words = str.toLowerCase().split(/\s+/).filter(Boolean).map(w =>
+      [...w].map(ch => {
+        if (MORSE[ch]) return MORSE[ch];
+        skipped.add(ch); return null;
+      }).filter(Boolean).join(" ")
+    ).filter(Boolean);
+    return { value: words.join(" / "), skipped: [...skipped] };
+  }
+  function toLeet(str) { return [...str].map(ch => LEET[ch.toLowerCase()] || ch).join(""); }
 
-  function parseHex(s) {
-    const clean = s.replace(/0x/gi, "").replace(/[\s,:;._-]/g, "");
-    if (!clean) return { bytes: new Uint8Array(0) };
-    const bad = clean.match(/[^0-9a-f]/i);
-    if (bad) return { error: `"${bad[0]}" is not a hex digit. Only 0–9 and a–f work.` };
-    if (clean.length % 2) return { error: `${clean.length} digits — needs an even number, since every byte is two digits.` };
-    const bytes = new Uint8Array(clean.length / 2);
-    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+  function encode(str) {
+    if (fmt === "morse") return toMorse(str);
+    if (fmt === "leet") return { value: toLeet(str), skipped: [] };
+    const bytes = enc.encode(str);
+    if (fmt === "base64") return { value: toBase64(bytes), skipped: [] };
+    if (fmt === "base85") return { value: toBase85(bytes), skipped: [] };
+    return { value: bytesToDigits(bytes), skipped: [] };
+  }
+
+  // ---- decoders -------------------------------------------------------
+  function digitsToBytes(s) {
+    const f = FORMATS[fmt];
+    if (fmt === "hex") {
+      const clean = s.replace(/0x/gi, "").replace(/[\s,:;._-]/g, "");
+      if (!clean) return { bytes: new Uint8Array(0) };
+      const bad = clean.match(/[^0-9a-f]/i);
+      if (bad) return { error: `"${bad[0]}" is not a hex digit. Only 0–9 and a–f work.` };
+      if (clean.length % 2) return { error: `${clean.length} digits — needs an even number, since every byte is two digits.` };
+      const bytes = new Uint8Array(clean.length / 2);
+      for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+      return { bytes };
+    }
+    if (fmt === "binary") {
+      const clean = s.replace(/[^01]/g, "");
+      if (!clean) return { bytes: new Uint8Array(0) };
+      if (clean.length % 8) return { error: `${clean.length} bits — needs a multiple of 8, since every byte is eight bits.` };
+      const bytes = new Uint8Array(clean.length / 8);
+      for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.substr(i * 8, 8), 2);
+      return { bytes };
+    }
+    const parts = s.split(/[^0-9a-zA-Z]+/).filter(Boolean);
+    const bytes = new Uint8Array(parts.length);
+    for (let i = 0; i < parts.length; i++) {
+      const v = parseInt(parts[i], f.radix);
+      if (Number.isNaN(v) || !/^[0-7]+$/.test(parts[i]) && fmt === "octal")
+        return { error: `"${parts[i]}" is not a valid ${f.label.toLowerCase()} number.` };
+      if (Number.isNaN(v)) return { error: `"${parts[i]}" is not a number.` };
+      if (v > 255) return { error: `${parts[i]} is over 255 — each byte has to fit in 0–255.` };
+      bytes[i] = v;
+    }
     return { bytes };
   }
-
-  function showError(msg) {
-    err.textContent = msg || "";
-    err.hidden = !msg;
+  function fromBase64(s) {
+    const clean = s.replace(/\s/g, "");
+    if (!clean) return { bytes: new Uint8Array(0) };
+    try {
+      const bin = atob(clean);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return { bytes };
+    } catch { return { error: "That isn't valid Base64. Check for stray characters or a missing = at the end." }; }
   }
+  function fromBase85(s) {
+    const clean = s.replace(/\s/g, "");
+    if (!clean) return { bytes: new Uint8Array(0) };
+    const outBytes = [];
+    for (let i = 0; i < clean.length; i += 5) {
+      const group = clean.slice(i, i + 5), n = group.length;
+      if (n === 1) return { error: "Base85 groups are 2–5 characters. This one has a single leftover character." };
+      let v = 0;
+      for (let j = 0; j < 5; j++) {
+        const ch = j < n ? group[j] : B85[84];
+        const idx = B85.indexOf(ch);
+        if (idx < 0) return { error: `"${ch}" isn't a Base85 character.` };
+        v = v * 85 + idx;
+      }
+      const four = [v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255];
+      outBytes.push(...four.slice(0, n - 1));
+    }
+    return { bytes: new Uint8Array(outBytes) };
+  }
+  function fromMorse(s) {
+    const words = s.trim().split(/\s*[/|]\s*/).filter(Boolean);
+    const bad = [];
+    const str = words.map(w => w.split(/\s+/).filter(Boolean).map(tok => {
+      if (UNMORSE[tok]) return UNMORSE[tok];
+      bad.push(tok); return "";
+    }).join("")).join(" ");
+    if (bad.length) return { error: `"${bad[0]}" isn't a Morse letter. Use dots, dashes, spaces between letters and / between words.` };
+    return { str };
+  }
+  function fromLeet(s) { return { str: [...s].map(ch => UNLEET[ch] || ch).join("") }; }
+
+  function decode(s) {
+    if (fmt === "morse") return fromMorse(s);
+    if (fmt === "leet") return fromLeet(s);
+    const r = fmt === "base64" ? fromBase64(s) : fmt === "base85" ? fromBase85(s) : digitsToBytes(s);
+    if (r.error) return r;
+    try { return { str: decStrict.decode(r.bytes), bytes: r.bytes }; }
+    catch { return { str: decLoose.decode(r.bytes), bytes: r.bytes, warn: "These bytes aren't valid text. Anything unreadable shows as ￼." }; }
+  }
+
+  // ---- wiring ---------------------------------------------------------
+  function counts(str, byteLen) {
+    const chars = [...str].length;
+    const c = `${chars} character${chars === 1 ? "" : "s"}`;
+    return byteLen == null ? c : `${c} · ${byteLen} byte${byteLen === 1 ? "" : "s"}`;
+  }
+  function show(el, msg) { el.textContent = msg || ""; el.hidden = !msg; }
 
   function fromText() {
-    hex.value = toHex(text.value);
-    showError("");
-    const chars = [...text.value].length, bytes = enc.encode(text.value).length;
-    $("textStat").textContent = `${chars} character${chars === 1 ? "" : "s"} · ${bytes} byte${bytes === 1 ? "" : "s"}`;
-    $("hexStat").textContent = `${bytes} byte${bytes === 1 ? "" : "s"}`;
+    const r = encode(text.value);
+    out.value = r.value;
+    show(err, "");
+    show(note, r.skipped && r.skipped.length
+      ? `Left out: ${r.skipped.map(c => `"${c}"`).join(", ")} — Morse has no code for these.` : "");
+    const bytes = FORMATS[fmt].byteWise || fmt === "base64" || fmt === "base85" ? enc.encode(text.value).length : null;
+    $("textStat").textContent = counts(text.value, bytes);
+    $("outStat").textContent = `${[...out.value].length} characters`;
   }
 
-  function fromHex() {
-    const r = parseHex(hex.value);
-    if (r.error) { showError(r.error); $("hexStat").textContent = "—"; return; }
-    try {
-      text.value = dec.decode(r.bytes);
-      showError("");
-    } catch {
-      text.value = new TextDecoder("utf-8").decode(r.bytes);
-      showError("These bytes aren't valid UTF-8 text. Anything unreadable shows as ￼.");
-    }
-    const chars = [...text.value].length;
-    $("textStat").textContent = `${chars} character${chars === 1 ? "" : "s"} · ${r.bytes.length} byte${r.bytes.length === 1 ? "" : "s"}`;
-    $("hexStat").textContent = `${r.bytes.length} byte${r.bytes.length === 1 ? "" : "s"}`;
+  function fromOut() {
+    const r = decode(out.value);
+    if (r.error) { show(err, r.error); $("outStat").textContent = "—"; return; }
+    text.value = r.str;
+    show(err, "");
+    show(note, r.warn || "");
+    $("textStat").textContent = counts(r.str, r.bytes ? r.bytes.length : null);
+    $("outStat").textContent = `${[...out.value].length} characters`;
   }
 
-  text.addEventListener("input", () => { editing = "text"; fromText(); });
-  hex.addEventListener("input", () => { editing = "hex"; fromHex(); });
-  [upper, prefix, sep].forEach(el => el.addEventListener("change", () => {
-    if (editing === "hex") { const r = parseHex(hex.value); if (!r.error) hex.value = toHex(text.value); }
-    else fromText();
-  }));
+  function setFormat(key) {
+    fmt = key;
+    $("outLabel").textContent = FORMATS[key].label;
+    document.querySelectorAll("#formats button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.fmt === key)));
+    const digity = !!FORMATS[key].byteWise;
+    $("opts").hidden = !digity;
+    $("prefixWrap").hidden = key !== "hex";
+    upper.parentElement.hidden = key !== "hex";
+    out.placeholder = { hex: "48 65 6C 6C 6F", binary: "01001000 01101001", decimal: "72 105",
+      octal: "110 151", base64: "SGVsbG8=", base85: "NW0", morse: ".... . .-.. .-.. ---",
+      leet: "H3110" }[key];
+    try { localStorage.setItem("hex-fmt", key); } catch {}
+    fromText();
+    if (key === "leet") show(note, "Leet is a one-way swap: turning it back gives lowercase, and 1 always comes back as l.");
+  }
+
+  const fmtBar = $("formats");
+  for (const [key, f] of Object.entries(FORMATS)) {
+    const b = document.createElement("button");
+    b.type = "button"; b.dataset.fmt = key; b.textContent = f.label;
+    b.setAttribute("aria-pressed", String(key === fmt));
+    b.addEventListener("click", () => setFormat(key));
+    fmtBar.appendChild(b);
+  }
+
+  text.addEventListener("input", fromText);
+  out.addEventListener("input", fromOut);
+  [upper, prefix, sep].forEach(el => el.addEventListener("change", fromText));
 
   $("swap").addEventListener("click", () => {
     const panes = document.querySelector(".panes");
-    const first = panes.firstElementChild, last = panes.lastElementChild;
-    panes.insertBefore(last, first);
+    panes.insertBefore(panes.lastElementChild, panes.firstElementChild);
   });
 
-  for (const [btn, el] of [["copyText", text], ["copyHex", hex]]) {
+  for (const [btn, el] of [["copyText", text], ["copyOut", out]]) {
     $(btn).addEventListener("click", async e => {
       const b = e.currentTarget, label = b.textContent;
       try { await navigator.clipboard.writeText(el.value); b.textContent = "Copied"; }
@@ -239,9 +415,11 @@
       setTimeout(() => (b.textContent = label), 1400);
     });
   }
-  $("clearText").addEventListener("click", () => { text.value = ""; editing = "text"; fromText(); text.focus(); });
-  $("clearHex").addEventListener("click", () => { hex.value = ""; editing = "hex"; text.value = ""; showError(""); $("textStat").textContent = "0 characters · 0 bytes"; $("hexStat").textContent = "0 bytes"; hex.focus(); });
+  $("clearText").addEventListener("click", () => { text.value = ""; fromText(); text.focus(); });
+  $("clearOut").addEventListener("click", () => { out.value = ""; text.value = ""; show(err, ""); show(note, ""); $("textStat").textContent = counts("", 0); $("outStat").textContent = "0 characters"; out.focus(); });
 
-  fromText();
+  let saved = "hex";
+  try { saved = localStorage.getItem("hex-fmt") || "hex"; } catch {}
+  setFormat(FORMATS[saved] ? saved : "hex");
 })();
 </script>
