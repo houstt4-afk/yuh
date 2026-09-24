@@ -1,0 +1,221 @@
+<title>Velvet Codes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@1,6..96,500;1,6..96,700&family=Tilt+Neon&family=Syncopate:wght@700&family=JetBrains+Mono:wght@500&family=Jost:wght@400;500&display=swap">
+<style>
+  /* Single dark look on purpose: these codes live in a velvet room */
+  :root {
+    color-scheme: dark;
+    --velvet: #0c0709;
+    --velvet-2: #170d11;
+    --plum: #2a1119;
+    --gold: #d9b77a;
+    --gold-hi: #fff1c9;
+    --gold-lo: #8f6a2e;
+    --rose: #ff4f8b;
+    --rose-soft: #ff9cbf;
+    --chrome-hi: #ffffff;
+    --chrome-lo: #6f7780;
+    --red: #b3122e;
+    --text: #efe4e6;
+    --muted: #a08d92;
+    --line: #3a2229;
+    --ui: "Jost", "Futura", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #3a1422 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, #24101a 0%, transparent 60%),
+      var(--velvet);
+    color: var(--text);
+    font: 15px/1.5 var(--ui);
+    padding: 0 16px;
+    min-height: 100%;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding-block: 36px 56px; display: grid; gap: 28px; }
+
+  header { display: grid; gap: 8px; }
+  .eyebrow { font: 500 11px/1 var(--ui); letter-spacing: .32em; text-transform: uppercase; color: var(--gold); }
+  h1 {
+    margin: 0; font: italic 700 clamp(44px, 11vw, 88px)/0.95 "Bodoni Moda", "Didot", Georgia, serif;
+    background: linear-gradient(100deg, var(--gold-lo), var(--gold-hi) 35%, var(--gold) 55%, var(--gold-lo) 80%, var(--gold-hi));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-wrap: balance;
+  }
+  header p { margin: 0; color: var(--muted); max-width: 56ch; }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .styles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .styles button, .shuffle {
+    font: 500 13px/1 var(--ui); letter-spacing: .12em; text-transform: uppercase;
+    padding: 10px 14px; border-radius: 999px; cursor: pointer;
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+  }
+  .styles button[aria-pressed="true"] { color: var(--velvet); background: var(--gold); border-color: var(--gold); }
+  .shuffle { color: var(--gold-hi); border-color: var(--gold-lo); }
+  .shuffle:hover, .styles button:hover { border-color: var(--gold); }
+  button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+  .card {
+    position: relative; min-width: 0; cursor: pointer; text-align: left;
+    border-radius: 14px; padding: 22px 20px 16px; display: grid; gap: 12px;
+    border: 1px solid var(--line); background: var(--velvet-2); color: var(--text);
+    font: inherit; transition: transform .25s ease, box-shadow .25s ease, border-color .25s;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .card .n { font: 500 10px/1 var(--ui); letter-spacing: .3em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+  .card .code { font-size: 25px; line-height: 1.15; padding: 6px 4px; margin: -6px -4px; white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .card .code::-webkit-scrollbar { display: none; }
+  .card .copied { color: var(--gold); opacity: 0; transition: opacity .2s; }
+  .card.flash .copied { opacity: 1; }
+
+  /* Gold foil */
+  .card[data-s="gold"] { background: linear-gradient(160deg, #1b1210, #0d0808); border-color: #4a3620; }
+  .card[data-s="gold"]:hover { box-shadow: 0 10px 40px -12px rgba(217,183,122,.45); border-color: var(--gold-lo); }
+  .card[data-s="gold"] .code {
+    font: italic 700 27px/1.15 "Bodoni Moda", "Didot", Georgia, serif; letter-spacing: .02em;
+    background: linear-gradient(100deg, var(--gold-lo), var(--gold-hi) 30%, var(--gold) 50%, var(--gold-lo) 75%, var(--gold-hi));
+    background-size: 200% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: foil 6s linear infinite;
+  }
+  @keyframes foil { to { background-position: -200% 0; } }
+
+  /* Neon */
+  .card[data-s="neon"] { background: #0a0508; border-color: #3b1024; }
+  .card[data-s="neon"]:hover { box-shadow: 0 0 36px -8px rgba(255,79,139,.55); border-color: #6b1d40; }
+  .card[data-s="neon"] .code {
+    font: 400 24px/1.15 "Tilt Neon", "Jost", sans-serif; letter-spacing: .02em; color: #ffe3ee;
+    text-shadow: 0 0 4px #fff, 0 0 10px var(--rose), 0 0 22px var(--rose), 0 0 44px #c21d5c;
+    animation: buzz 7s infinite;
+  }
+  @keyframes buzz { 0%, 91%, 94%, 100% { opacity: 1; } 92% { opacity: .55; } 93% { opacity: .9; } 93.5% { opacity: .5; } }
+
+  /* Chrome */
+  .card[data-s="chrome"] { background: linear-gradient(160deg, #15161a, #0b0b0e); border-color: #2c2f36; }
+  .card[data-s="chrome"]:hover { box-shadow: 0 10px 40px -14px rgba(220,230,240,.35); border-color: #4a4f58; }
+  .card[data-s="chrome"] .code {
+    font: 700 19px/1.4 "Syncopate", "Jost", sans-serif; letter-spacing: .08em; text-transform: uppercase;
+    background: linear-gradient(180deg, var(--chrome-hi) 0%, #c9d0d8 42%, var(--chrome-lo) 50%, #dfe5ea 62%, #9aa3ad 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* Noir red */
+  .card[data-s="noir"] { background: linear-gradient(160deg, #1d060c, #0c0507); border-color: #4a0f1d; }
+  .card[data-s="noir"]:hover { box-shadow: 0 10px 40px -12px rgba(179,18,46,.6); border-color: var(--red); }
+  .card[data-s="noir"] .code { font: 500 21px/1.2 "JetBrains Mono", ui-monospace, Menlo, monospace; color: #ffd9df; letter-spacing: .04em; }
+  .card[data-s="noir"] .code b { color: var(--red); font-weight: 500; text-shadow: 0 0 12px rgba(179,18,46,.8); }
+
+  .sep { opacity: .45; margin: 0 .18em; }
+  .card[data-s="neon"] .sep { opacity: .6; }
+
+  footer { color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+  footer strong { color: var(--gold); font-weight: 500; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .card .copied { transition: none; }
+    .card[data-s="gold"] .code, .card[data-s="neon"] .code { animation: none; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">16 characters · hex · unguessable</span>
+    <h1>Velvet Codes</h1>
+    <p>Fifteen random codes, each dressed four ways. Tap a card to copy its plain code. Shuffle for a fresh set.</p>
+  </header>
+
+  <div class="bar">
+    <div class="styles" role="group" aria-label="Style">
+      <button type="button" id="s-mix" data-style="mix" aria-pressed="true">Mix</button>
+      <button type="button" id="s-gold" data-style="gold" aria-pressed="false">Gold</button>
+      <button type="button" id="s-neon" data-style="neon" aria-pressed="false">Neon</button>
+      <button type="button" id="s-chrome" data-style="chrome" aria-pressed="false">Chrome</button>
+      <button type="button" id="s-noir" data-style="noir" aria-pressed="false">Noir</button>
+    </div>
+    <button type="button" class="shuffle" id="shuffle">Shuffle ✦</button>
+  </div>
+
+  <section class="grid" id="grid" aria-live="polite"></section>
+
+  <footer>
+    <span><strong>Every code:</strong> 6–9 letters, no doubled characters, no 4-digit or 3-letter clumps, at least 12 different characters.</span>
+    <span>New codes come from your browser's secure random generator.</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const START = [
+    "f6a8c306fe9c5f7d", "a1b8e15f874e8d69", "49f63b84f3ea2dc2", "b6b3e81a5d748dc4", "b20e15e7a90cd821",
+    "2b4f1ce0ba547bd4", "ad4ba603fc9f7b87", "28fd405a9f7c43d7", "2c54f476a3cd175b", "251a4b5a89a73fac",
+    "8e4ec3fa1c5d965d", "ed2c96cb38ea5f51", "d8f696ad75b1b2ea", "c489a2ba5d6e37d8", "3d5a2ef7d909ac68"
+  ];
+  const STYLES = ["gold", "neon", "chrome", "noir"];
+  const NAMES = { gold: "Gold foil", neon: "Neon", chrome: "Chrome", noir: "Noir" };
+  let codes = START.slice();
+  let style = "mix";
+
+  function good(s) {
+    const letters = [...s].filter(c => c >= "a").length;
+    if (letters < 6 || letters > 9) return false;
+    for (let i = 0; i < 15; i++) if (s[i] === s[i + 1]) return false;
+    if (new Set(s).size < 12) return false;
+    if (/\d{4}/.test(s) || /[a-f]{3}/.test(s)) return false;
+    return true;
+  }
+  function fresh() {
+    const out = [], buf = new Uint8Array(8);
+    while (out.length < 15) {
+      crypto.getRandomValues(buf);
+      const s = [...buf].map(b => b.toString(16).padStart(2, "0")).join("");
+      if (good(s)) out.push(s);
+    }
+    return out;
+  }
+
+  function codeHTML(c, s) {
+    const groups = c.match(/.{4}/g);
+    if (s === "noir") {
+      return groups.map(g => [...g].map(ch => ch >= "a" ? `<b>${ch}</b>` : ch).join("")).join('<span class="sep">·</span>');
+    }
+    return groups.join('<span class="sep">·</span>');
+  }
+
+  function render() {
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    codes.forEach((c, i) => {
+      const s = style === "mix" ? STYLES[i % 4] : style;
+      const card = document.createElement("button");
+      card.type = "button"; card.className = "card"; card.dataset.s = s;
+      card.setAttribute("aria-label", `Copy code ${c}`);
+      card.innerHTML = `<span class="n"><span>No. ${String(i + 1).padStart(2, "0")} · ${NAMES[s]}</span><span class="copied">Copied</span></span><span class="code">${codeHTML(c, s)}</span>`;
+      card.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(c); card.querySelector(".copied").textContent = "Copied"; }
+        catch { card.querySelector(".copied").textContent = c; }
+        card.classList.add("flash");
+        setTimeout(() => card.classList.remove("flash"), 1400);
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll(".styles button").forEach(b => b.addEventListener("click", () => {
+    style = b.dataset.style;
+    document.querySelectorAll(".styles button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    try { localStorage.setItem("velvet-style", style); } catch {}
+    render();
+  }));
+  document.getElementById("shuffle").addEventListener("click", () => { codes = fresh(); render(); });
+
+  try {
+    const saved = localStorage.getItem("velvet-style");
+    const btn = saved && document.querySelector(`.styles button[data-style="${saved}"]`);
+    if (btn) { style = saved; document.querySelectorAll(".styles button").forEach(x => x.setAttribute("aria-pressed", String(x === btn))); }
+  } catch {}
+  render();
+})();
+</script>
