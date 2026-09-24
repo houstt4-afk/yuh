@@ -1,0 +1,247 @@
+<title>Hex Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f2f4f3;
+    --surface: #ffffff;
+    --sunken: #e9edec;
+    --ink: #141b1a;
+    --muted: #5d6b69;
+    --line: #d5dedc;
+    --accent: #0a6b5c;
+    --accent-soft: #d9efe9;
+    --on-accent: #ffffff;
+    --bad: #a8321f;
+    --bad-soft: #fbe6e2;
+    --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0e1413; --surface: #161e1d; --sunken: #101716; --ink: #e4ecea;
+      --muted: #91a29f; --line: #283533; --accent: #4fc8ad; --accent-soft: #123430;
+      --on-accent: #0e1413; --bad: #f08a76; --bad-soft: #3a1a14;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0e1413; --surface: #161e1d; --sunken: #101716; --ink: #e4ecea;
+    --muted: #91a29f; --line: #283533; --accent: #4fc8ad; --accent-soft: #123430;
+    --on-accent: #0e1413; --bad: #f08a76; --bad-soft: #3a1a14;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); padding: 0 16px; }
+  .wrap { max-width: 900px; margin: 0 auto; padding-block: 28px 48px; display: grid; gap: 20px; }
+
+  header { display: grid; gap: 6px; }
+  h1 { margin: 0; font: 700 clamp(28px, 6vw, 38px)/1.1 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+  .panes { display: grid; gap: 12px; }
+  .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 10px; padding: 14px; min-width: 0; }
+  .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .pane-head h2 { margin: 0; font: 500 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .tools { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    font: 500 13px/1 var(--body); padding: 8px 11px; border-radius: 7px; cursor: pointer;
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+  }
+  button:hover { color: var(--ink); border-color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+  textarea {
+    width: 100%; min-height: 150px; resize: vertical; padding: 12px;
+    background: var(--sunken); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+    font: 15px/1.6 var(--mono); letter-spacing: .01em;
+  }
+  textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #text { font-family: var(--body); font-size: 15px; letter-spacing: 0; }
+
+  .swap { display: flex; justify-content: center; }
+  .swap button { border-radius: 999px; padding: 9px 18px; font-weight: 500; }
+
+  .status { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .status .num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+  .err { color: var(--bad); background: var(--bad-soft); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+  .err[hidden] { display: none; }
+
+  .opts { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+  .opts label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+  select {
+    font: 500 13px/1 var(--body); padding: 7px 9px; border-radius: 7px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+  }
+
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+  summary { font: 500 15px/1.3 var(--display); cursor: pointer; }
+  details table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  details td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--line); }
+  details td:first-child { font-family: var(--mono); color: var(--accent); white-space: nowrap; }
+  details p { color: var(--muted); max-width: 64ch; }
+  .scroll { overflow-x: auto; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Hex Translator</h1>
+    <p>Type in either box. Text becomes hex as you type, and hex becomes text the same way. Works with letters, emoji and any other character.</p>
+  </header>
+
+  <div class="panes">
+    <section class="pane">
+      <div class="pane-head">
+        <h2>Text</h2>
+        <div class="tools">
+          <button type="button" id="copyText">Copy</button>
+          <button type="button" id="clearText">Clear</button>
+        </div>
+      </div>
+      <textarea id="text" spellcheck="false" placeholder="Type anything here…">Hello</textarea>
+      <div class="status"><span class="num" id="textStat">5 characters · 5 bytes</span></div>
+    </section>
+
+    <div class="swap"><button type="button" id="swap">↕ Swap sides</button></div>
+
+    <section class="pane">
+      <div class="pane-head">
+        <h2>Hex</h2>
+        <div class="tools">
+          <button type="button" id="copyHex">Copy</button>
+          <button type="button" id="clearHex">Clear</button>
+        </div>
+      </div>
+      <textarea id="hex" spellcheck="false" placeholder="48 65 6C 6C 6F"></textarea>
+      <div class="opts">
+        <label><input type="checkbox" id="upper" checked> Uppercase</label>
+        <label>Separator
+          <select id="sep">
+            <option value=" ">space</option>
+            <option value="">none</option>
+            <option value="-">dash</option>
+            <option value=":">colon</option>
+            <option value="\n">one per line</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="prefix"> 0x prefix</label>
+      </div>
+      <div class="status"><span class="num" id="hexStat">5 bytes</span></div>
+      <div class="err" id="err" hidden></div>
+    </section>
+  </div>
+
+  <details>
+    <summary>Hexspeak: words you can spell in hex</summary>
+    <p>Hex only has 0–9 and a–f, so words get spelled with digits standing in for letters. These are the common swaps.</p>
+    <div class="scroll">
+      <table>
+        <tr><td>0</td><td>o</td><td>c0c0a → cocoa</td></tr>
+        <tr><td>1</td><td>l or i</td><td>c1a55 → class</td></tr>
+        <tr><td>5</td><td>s</td><td>5ace → sace</td></tr>
+        <tr><td>6</td><td>g</td><td>60dde55 → goddess</td></tr>
+        <tr><td>7</td><td>t</td><td>7a57e → taste</td></tr>
+        <tr><td>2</td><td>z</td><td>2e5t → zest</td></tr>
+        <tr><td>8</td><td>b (loosely)</td><td>8ad → bad</td></tr>
+      </table>
+    </div>
+    <p>Letters with no stand-in — h, k, m, n, p, q, r, u, v, w, x, y — can't be written in real hex at all.</p>
+  </details>
+
+  <details>
+    <summary>How the conversion works</summary>
+    <p>Each character is turned into bytes using UTF-8, then each byte is written as two hex digits. Plain English characters take one byte each, so <code>A</code> is <code>41</code>. Accented letters and emoji take more: <code>é</code> is <code>C3 A9</code> and 🔥 is <code>F0 9F 94 A5</code>.</p>
+      <p>Going the other way, the hex box ignores spaces, dashes, colons, line breaks and <code>0x</code> prefixes, so you can paste hex in almost any format. It needs an even number of digits, since every byte is two.</p>
+  </details>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const text = $("text"), hex = $("hex"), err = $("err");
+  const upper = $("upper"), sep = $("sep"), prefix = $("prefix");
+  const enc = new TextEncoder(), dec = new TextDecoder("utf-8", { fatal: true });
+  let editing = null;
+
+  function sepChar() { return sep.value === "\\n" ? "\n" : sep.value; }
+
+  function toHex(s) {
+    const bytes = enc.encode(s);
+    const p = prefix.checked ? "0x" : "";
+    return [...bytes].map(b => {
+      const h = b.toString(16).padStart(2, "0");
+      return p + (upper.checked ? h.toUpperCase() : h);
+    }).join(sepChar());
+  }
+
+  function parseHex(s) {
+    const clean = s.replace(/0x/gi, "").replace(/[\s,:;._-]/g, "");
+    if (!clean) return { bytes: new Uint8Array(0) };
+    const bad = clean.match(/[^0-9a-f]/i);
+    if (bad) return { error: `"${bad[0]}" is not a hex digit. Only 0–9 and a–f work.` };
+    if (clean.length % 2) return { error: `${clean.length} digits — needs an even number, since every byte is two digits.` };
+    const bytes = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+    return { bytes };
+  }
+
+  function showError(msg) {
+    err.textContent = msg || "";
+    err.hidden = !msg;
+  }
+
+  function fromText() {
+    hex.value = toHex(text.value);
+    showError("");
+    const chars = [...text.value].length, bytes = enc.encode(text.value).length;
+    $("textStat").textContent = `${chars} character${chars === 1 ? "" : "s"} · ${bytes} byte${bytes === 1 ? "" : "s"}`;
+    $("hexStat").textContent = `${bytes} byte${bytes === 1 ? "" : "s"}`;
+  }
+
+  function fromHex() {
+    const r = parseHex(hex.value);
+    if (r.error) { showError(r.error); $("hexStat").textContent = "—"; return; }
+    try {
+      text.value = dec.decode(r.bytes);
+      showError("");
+    } catch {
+      text.value = new TextDecoder("utf-8").decode(r.bytes);
+      showError("These bytes aren't valid UTF-8 text. Anything unreadable shows as ￼.");
+    }
+    const chars = [...text.value].length;
+    $("textStat").textContent = `${chars} character${chars === 1 ? "" : "s"} · ${r.bytes.length} byte${r.bytes.length === 1 ? "" : "s"}`;
+    $("hexStat").textContent = `${r.bytes.length} byte${r.bytes.length === 1 ? "" : "s"}`;
+  }
+
+  text.addEventListener("input", () => { editing = "text"; fromText(); });
+  hex.addEventListener("input", () => { editing = "hex"; fromHex(); });
+  [upper, prefix, sep].forEach(el => el.addEventListener("change", () => {
+    if (editing === "hex") { const r = parseHex(hex.value); if (!r.error) hex.value = toHex(text.value); }
+    else fromText();
+  }));
+
+  $("swap").addEventListener("click", () => {
+    const panes = document.querySelector(".panes");
+    const first = panes.firstElementChild, last = panes.lastElementChild;
+    panes.insertBefore(last, first);
+  });
+
+  for (const [btn, el] of [["copyText", text], ["copyHex", hex]]) {
+    $(btn).addEventListener("click", async e => {
+      const b = e.currentTarget, label = b.textContent;
+      try { await navigator.clipboard.writeText(el.value); b.textContent = "Copied"; }
+      catch { el.select(); b.textContent = "Selected"; }
+      setTimeout(() => (b.textContent = label), 1400);
+    });
+  }
+  $("clearText").addEventListener("click", () => { text.value = ""; editing = "text"; fromText(); text.focus(); });
+  $("clearHex").addEventListener("click", () => { hex.value = ""; editing = "hex"; text.value = ""; showError(""); $("textStat").textContent = "0 characters · 0 bytes"; $("hexStat").textContent = "0 bytes"; hex.focus(); });
+
+  fromText();
+})();
+</script>
