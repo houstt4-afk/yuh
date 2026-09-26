@@ -172,6 +172,7 @@
     <summary>What each format is</summary>
     <div class="scroll">
       <table>
+        <tr><td>Code</td><td>Any text at all squeezed down to 16 characters, like <code>a4f3c91e07b2d856</code>. One-way: the same text always gives the same code, but a code can't be turned back.</td></tr>
         <tr><td>Hex</td><td>Each byte as two digits, 0–9 and a–f. <code>Hi</code> → <code>48 69</code></td></tr>
         <tr><td>Binary</td><td>Each byte as eight 1s and 0s. <code>Hi</code> → <code>01001000 01101001</code></td></tr>
         <tr><td>Decimal</td><td>Each byte as a plain number, 0–255. <code>Hi</code> → <code>72 105</code></td></tr>
@@ -240,6 +241,7 @@
   const B85 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~";
 
   const FORMATS = {
+    code:   { label: "Code", oneWay: true },
     hex:    { label: "Hex",     radix: 16, pad: 2, byteWise: true },
     binary: { label: "Binary",  radix: 2,  pad: 8, byteWise: true },
     decimal:{ label: "Decimal", radix: 10, pad: 0, byteWise: true },
@@ -255,6 +257,7 @@
     leet:   { label: "Leet" }
   };
   let fmt = "hex";
+  let formatNote = "";
 
   function sepChar() { return sep.value === "\\n" ? "\n" : sep.value; }
 
@@ -322,9 +325,18 @@
       return cp > 126 || cp < 32 ? `&#${cp};` : ch;
     }).join("");
   }
+  // One-way 16-character code: FNV-1a 64-bit over the UTF-8 bytes.
+  // Any text at all gives a code; the same text always gives the same one.
+  function toCode(str) {
+    const MASK = (1n << 64n) - 1n, PRIME = 1099511628211n;
+    let h = 14695981039346656037n;
+    for (const b of enc.encode(str)) { h ^= BigInt(b); h = (h * PRIME) & MASK; }
+    return h.toString(16).padStart(16, "0");
+  }
   function toLeet(str) { return [...str].map(ch => LEET[ch.toLowerCase()] || ch).join(""); }
 
   function encode(str) {
+    if (fmt === "code") return { value: str ? toCode(str) : "", skipped: [] };
     if (fmt === "morse") return toMorse(str);
     if (fmt === "nato") return toNato(str);
     if (fmt === "rot13") return { value: rot13(str), skipped: [] };
@@ -452,6 +464,7 @@
   function fromLeet(s) { return { str: [...s].map(ch => UNLEET[ch] || ch).join("") }; }
 
   function decode(s) {
+    if (FORMATS[fmt].oneWay) return { error: "A code is one-way — it can't be turned back into text. Type in the Text box instead." };
     if (fmt === "morse") return fromMorse(s);
     if (fmt === "nato") return fromNato(s);
     if (fmt === "rot13") return { str: rot13(s) };
@@ -478,7 +491,8 @@
     out.value = r.value;
     show(err, "");
     show(note, r.skipped && r.skipped.length
-      ? `Left out: ${r.skipped.map(c => `"${c}"`).join(", ")} — Morse has no code for these.` : "");
+      ? `Left out: ${r.skipped.map(c => `"${c}"`).join(", ")} — Morse has no code for these.`
+      : formatNote);
     const bytes = FORMATS[fmt].byteWise || ["base64", "base85", "base32"].includes(fmt) ? enc.encode(text.value).length : null;
     $("textStat").textContent = counts(text.value, bytes);
     $("outStat").textContent = `${[...out.value].length} characters`;
@@ -489,7 +503,7 @@
     if (r.error) { show(err, r.error); $("outStat").textContent = "—"; return; }
     text.value = r.str;
     show(err, "");
-    show(note, r.warn || "");
+    show(note, r.warn || formatNote);
     $("textStat").textContent = counts(r.str, r.bytes ? r.bytes.length : null);
     $("outStat").textContent = `${[...out.value].length} characters`;
   }
@@ -499,6 +513,7 @@
     $("outLabel").textContent = FORMATS[key].label;
     document.querySelectorAll("#formats button").forEach(b =>
       b.setAttribute("aria-pressed", String(b.dataset.fmt === key)));
+    out.readOnly = !!FORMATS[key].oneWay;
     const digity = !!FORMATS[key].byteWise;
     $("opts").hidden = !digity;
     $("prefixWrap").hidden = key !== "hex";
@@ -506,16 +521,19 @@
     out.placeholder = { hex: "48 65 6C 6C 6F", binary: "01001000 01101001", decimal: "72 105",
       octal: "110 151", base64: "SGVsbG8=", base85: "NW0", base32: "JBSWY3DP",
       morse: ".... . .-.. .-.. ---", nato: "Hotel Echo Lima Lima Oscar",
-      rot13: "Uryyb", url: "Hello%20there", html: "caf&#233;", leet: "H3110" }[key];
+      rot13: "Uryyb", url: "Hello%20there", html: "caf&#233;", leet: "H3110",
+      code: "a4f3c91e07b2d856" }[key];
     try { localStorage.setItem("hex-fmt", key); } catch {}
-    fromText();
     const notes = {
       leet: "Leet is a one-way swap: turning it back gives lowercase, and 1 always comes back as l.",
       morse: "Morse has no capitals or punctuation beyond the basics, so text comes back lowercase.",
       nato: "NATO code words have no capitals, so text comes back lowercase.",
+      code: "Type anything — any letters, spaces, emoji — and you get a 16-character code. The same text always gives the same code, and it only goes one way.",
       rot13: "ROT13 is its own reverse — running it twice gives the original text back."
     };
-    if (notes[key]) show(note, notes[key]);
+    formatNote = notes[key] || "";
+    fromText();
+    show(note, formatNote);
   }
 
   // Random hexspeak generator — feeds the Text box so it translates straight away
