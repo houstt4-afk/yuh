@@ -45,6 +45,10 @@
   .formats { display: flex; gap: 6px; flex-wrap: wrap; }
   .formats button { font-size: 13px; }
 
+  .random { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .rlabel { font: 500 11px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .rout { font: 13px/1.4 var(--mono); color: var(--accent); }
+
   .panes { display: grid; gap: 12px; }
   .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 10px; padding: 14px; min-width: 0; }
   .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -95,10 +99,18 @@
 <div class="wrap">
   <header>
     <h1>Hex Translator</h1>
-    <p>Type in either box and the other one keeps up. Pick a format for the bottom box: hex, binary, decimal, octal, Base64, Base85, Morse or leetspeak.</p>
+    <p>Type in either box and the other one keeps up. Pick a format for the bottom box, or hit Random for a code to play with.</p>
   </header>
 
   <div class="formats" role="group" aria-label="Format" id="formats"></div>
+
+  <div class="random">
+    <span class="rlabel">Random</span>
+    <button type="button" id="rCode">Code</button>
+    <button type="button" id="rWord">Word</button>
+    <button type="button" id="rSentence">Sentence</button>
+    <span class="rout" id="rOut"></span>
+  </div>
 
   <div class="panes">
     <section class="pane">
@@ -493,6 +505,50 @@
     if (notes[key]) show(note, notes[key]);
   }
 
+  // Random hexspeak generator — feeds the Text box so it translates straight away
+  const WORDS = [
+    ["babe", "babe"], ["bae", "bae"], ["face", "face"], ["cafe", "cafe"], ["fab", "fab"],
+    ["bed", "bed"], ["d011", "doll"], ["5ace", "sace"], ["fee1", "feel"], ["ba5e", "base"],
+    ["decaf", "decaf"], ["c0c0a", "cocoa"], ["f11e5", "files"], ["b1e55ed", "blessed"],
+    ["be11e", "belle"], ["c1a55", "class"], ["5a55", "sass"], ["ab5", "abs"],
+    ["fee15", "feels"], ["d0e", "doe"], ["7a57e", "taste"], ["7ea5e", "tease"],
+    ["60dde55", "goddess"], ["5e1f1e", "selfie"], ["d01ce", "dolce"], ["6a1a", "gala"],
+    ["6e1a70", "gelato"], ["a55e7", "asset"], ["5ea1ed", "sealed"], ["1ced", "iced"],
+    ["dec0", "deco"], ["c0a57", "coast"], ["7ea", "tea"], ["da7e", "date"],
+    ["1ace", "lace"], ["c0ded", "coded"], ["b0ba", "boba"], ["be57", "best"],
+    ["6a1", "gal"], ["1a55", "lass"], ["c0ffee", "coffee"], ["1ce", "ice"],
+    ["c1a551c", "classic"], ["50c1a1", "social"], ["1dea1", "ideal"], ["d011face", "dollface"]
+  ];
+  function pick(arr) { return arr[crypto.getRandomValues(new Uint32Array(1))[0] % arr.length]; }
+  function randHex(n) {
+    const buf = new Uint8Array(Math.ceil(n / 2));
+    crypto.getRandomValues(buf);
+    return [...buf].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, n);
+  }
+  function randomCode() {
+    const [w, plain] = pick(WORDS);
+    const filler = randHex(16), at = crypto.getRandomValues(new Uint32Array(1))[0] % (17 - w.length);
+    return { value: filler.slice(0, at) + w + filler.slice(at + w.length), hint: `hiding "${w}" — ${plain}` };
+  }
+  function randomWord() {
+    const [w, plain] = pick(WORDS);
+    return { value: w, hint: `${w} — ${plain}` };
+  }
+  function randomSentence() {
+    const seen = new Set(), out = [];
+    while (out.length < 4) { const p = pick(WORDS); if (!seen.has(p[0])) { seen.add(p[0]); out.push(p); } }
+    return { value: out.map(p => p[0]).join(" "), hint: out.map(p => p[1]).join(" ") };
+  }
+  function drop(gen) {
+    const r = gen();
+    text.value = r.value;
+    $("rOut").textContent = r.hint;
+    fromText();
+  }
+  $("rCode").addEventListener("click", () => drop(randomCode));
+  $("rWord").addEventListener("click", () => drop(randomWord));
+  $("rSentence").addEventListener("click", () => drop(randomSentence));
+
   const fmtBar = $("formats");
   for (const [key, f] of Object.entries(FORMATS)) {
     const b = document.createElement("button");
@@ -502,7 +558,7 @@
     fmtBar.appendChild(b);
   }
 
-  text.addEventListener("input", fromText);
+  text.addEventListener("input", () => { $("rOut").textContent = ""; fromText(); });
   out.addEventListener("input", fromOut);
   [upper, prefix, sep].forEach(el => el.addEventListener("change", fromText));
 
