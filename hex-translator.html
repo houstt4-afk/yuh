@@ -47,7 +47,14 @@
 
   .random { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .rlabel { font: 500 11px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-  .rout { font: 13px/1.4 var(--mono); color: var(--accent); }
+  .rout { font: 13px/1.5 var(--mono); color: var(--accent); min-height: 1.5em; }
+  .rout.bad { color: var(--bad); }
+  #wordIn {
+    flex: 1 1 8em; min-width: 0; max-width: 16em; padding: 8px 10px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 7px;
+    font: 15px/1.2 var(--mono);
+  }
+  #wordIn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
   .panes { display: grid; gap: 12px; }
   .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 10px; padding: 14px; min-width: 0; }
@@ -109,8 +116,14 @@
     <button type="button" id="rCode">Code</button>
     <button type="button" id="rWord">Word</button>
     <button type="button" id="rSentence">Sentence</button>
-    <span class="rout" id="rOut"></span>
   </div>
+
+  <div class="random">
+    <label class="rlabel" for="wordIn">Hide a word</label>
+    <input id="wordIn" type="text" placeholder="coast" autocomplete="off" spellcheck="false">
+    <button type="button" id="wordGo">Hide it</button>
+  </div>
+  <div class="rout" id="rOut"></div>
 
   <div class="panes">
     <section class="pane">
@@ -539,10 +552,50 @@
     while (out.length < 4) { const p = pick(WORDS); if (!seen.has(p[0])) { seen.add(p[0]); out.push(p); } }
     return { value: out.map(p => p[0]).join(" "), hint: out.map(p => p[1]).join(" ") };
   }
+  // Type your own word: swap letters for hex digits, then hide it in a random code
+  const TO_HEX = { o: "0", i: "1", l: "1", s: "5", t: "7", g: "6", z: "2",
+    a: "a", b: "b", c: "c", d: "d", e: "e", f: "f" };
+  function wordToHex(word) {
+    const clean = word.toLowerCase().replace(/\s+/g, "");
+    if (!clean) return { error: "Type a word first." };
+    if (clean.length > 16) return { error: `"${clean}" is ${clean.length} letters — 16 is the most that fits.` };
+    const bad = [];
+    const hexed = [...clean].map(ch => {
+      if (/[0-9]/.test(ch)) return ch;
+      const h = TO_HEX[ch];
+      if (h) return h;
+      if (!bad.includes(ch)) bad.push(ch);
+      return "";
+    }).join("");
+    if (bad.length) return { error: `Hex can't spell ${bad.map(c => `"${c}"`).join(", ")}. Usable letters: a b c d e f g i l o s t z, plus digits.` };
+    return { hexed, clean };
+  }
+  function hideWord() {
+    const r = wordToHex($("wordIn").value);
+    const el = $("rOut");
+    if (r.error) { el.textContent = r.error; el.classList.add("bad"); return; }
+    el.classList.remove("bad");
+    const filler = randHex(16);
+    const at = crypto.getRandomValues(new Uint32Array(1))[0] % (17 - r.hexed.length);
+    text.value = filler.slice(0, at) + r.hexed + filler.slice(at + r.hexed.length);
+    el.textContent = `hiding "${r.hexed}" — ${r.clean}`;
+    fromText();
+  }
+  $("wordGo").addEventListener("click", hideWord);
+  $("wordIn").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); hideWord(); } });
+  $("wordIn").addEventListener("input", () => {
+    const el = $("rOut"), v = $("wordIn").value.trim();
+    if (!v) { el.textContent = ""; el.classList.remove("bad"); return; }
+    const r = wordToHex(v);
+    if (r.error) { el.textContent = r.error; el.classList.add("bad"); }
+    else { el.textContent = `${v.toLowerCase()} spells ${r.hexed} — hit Hide it`; el.classList.remove("bad"); }
+  });
+
   function drop(gen) {
     const r = gen();
     text.value = r.value;
     $("rOut").textContent = r.hint;
+    $("rOut").classList.remove("bad");
     fromText();
   }
   $("rCode").addEventListener("click", () => drop(randomCode));
@@ -558,7 +611,11 @@
     fmtBar.appendChild(b);
   }
 
-  text.addEventListener("input", () => { $("rOut").textContent = ""; fromText(); });
+  text.addEventListener("input", () => {
+    const el = $("rOut");
+    if (!$("wordIn").value.trim()) { el.textContent = ""; el.classList.remove("bad"); }
+    fromText();
+  });
   out.addEventListener("input", fromOut);
   [upper, prefix, sep].forEach(el => el.addEventListener("change", fromText));
 
