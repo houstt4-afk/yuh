@@ -537,7 +537,7 @@
       morse: ".... . .-.. .-.. ---", nato: "Hotel Echo Lima Lima Oscar",
       rot13: "Uryyb", url: "Hello%20there", html: "caf&#233;", leet: "H3110",
       code: "a4f3c91e07b2d856", hexspeak: "7h15 15 hex5peak" }[key];
-    try { localStorage.setItem("hex-fmt", key); } catch {}
+    try { localStorage.setItem("hex-fmt-v2", key); } catch {}
     const notes = {
       leet: "Leet is a one-way swap: turning it back gives lowercase, and 1 always comes back as l.",
       morse: "Morse has no capitals or punctuation beyond the basics, so text comes back lowercase.",
@@ -677,7 +677,7 @@
   saveWords();
 
   let saved = "code";
-  try { saved = localStorage.getItem("hex-fmt") || "code"; } catch {}
+  try { saved = localStorage.getItem("hex-fmt-v2") || "code"; } catch {}
   setFormat(FORMATS[saved] ? saved : "code");
 })();
 </script>
