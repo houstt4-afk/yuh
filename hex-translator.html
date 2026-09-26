@@ -153,7 +153,12 @@
         <tr><td>Octal</td><td>Base 8, the old Unix way. <code>Hi</code> → <code>110 151</code></td></tr>
         <tr><td>Base64</td><td>The compact form used for email attachments and data URLs. <code>Hi</code> → <code>SGk=</code></td></tr>
         <tr><td>Base85</td><td>Shorter than Base64, with a bigger set of characters. <code>Hi</code> → <code>NW0</code></td></tr>
+        <tr><td>Base32</td><td>A–Z and 2–7 only, so it survives being read aloud or typed by hand. <code>Hi</code> → <code>JBUQ====</code></td></tr>
         <tr><td>Morse</td><td>Dots and dashes. Letters, digits and basic punctuation only. <code>Hi</code> → <code>.... ..</code></td></tr>
+        <tr><td>NATO</td><td>The phonetic alphabet used on radio. <code>Hi</code> → <code>Hotel India</code></td></tr>
+        <tr><td>ROT13</td><td>Each letter jumps 13 places. Running it twice undoes it. <code>Hi</code> → <code>Uv</code></td></tr>
+        <tr><td>URL</td><td>Percent encoding for web addresses. <code>a b</code> → <code>a%20b</code></td></tr>
+        <tr><td>HTML</td><td>Entities for web pages. <code>café &amp;</code> → <code>caf&amp;#233; &amp;amp;</code></td></tr>
         <tr><td>Leet</td><td>Letter swaps, not a real encoding: o→0, l/i→1, s→5, t→7, g→6, e→3, a→4, b→8, z→2</td></tr>
       </table>
     </div>
@@ -198,6 +203,15 @@
   const UNMORSE = Object.fromEntries(Object.entries(MORSE).map(([k, v]) => [v, k]));
   const LEET = { o: "0", l: "1", i: "1", s: "5", t: "7", g: "6", e: "3", a: "4", b: "8", z: "2" };
   const UNLEET = { 0: "o", 1: "l", 5: "s", 7: "t", 6: "g", 3: "e", 4: "a", 8: "b", 2: "z" };
+  const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const NATO = { a: "Alfa", b: "Bravo", c: "Charlie", d: "Delta", e: "Echo", f: "Foxtrot",
+    g: "Golf", h: "Hotel", i: "India", j: "Juliett", k: "Kilo", l: "Lima", m: "Mike",
+    n: "November", o: "Oscar", p: "Papa", q: "Quebec", r: "Romeo", s: "Sierra", t: "Tango",
+    u: "Uniform", v: "Victor", w: "Whiskey", x: "X-ray", y: "Yankee", z: "Zulu",
+    0: "Zero", 1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six",
+    7: "Seven", 8: "Eight", 9: "Nine" };
+  const UNNATO = Object.fromEntries(Object.entries(NATO).map(([k, v]) => [v.toLowerCase(), k]));
+  const HTML_NAMED = { "&": "amp", "<": "lt", ">": "gt", '"': "quot", "'": "#39" };
   const B85 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~";
 
   const FORMATS = {
@@ -207,7 +221,12 @@
     octal:  { label: "Octal",   radix: 8,  pad: 0, byteWise: true },
     base64: { label: "Base64" },
     base85: { label: "Base85" },
+    base32: { label: "Base32" },
     morse:  { label: "Morse" },
+    nato:   { label: "NATO" },
+    rot13:  { label: "ROT13" },
+    url:    { label: "URL" },
+    html:   { label: "HTML" },
     leet:   { label: "Leet" }
   };
   let fmt = "hex";
@@ -249,14 +268,48 @@
     ).filter(Boolean);
     return { value: words.join(" / "), skipped: [...skipped] };
   }
+  function toBase32(bytes) {
+    let bits = "", out = "";
+    for (const b of bytes) bits += b.toString(2).padStart(8, "0");
+    while (bits.length % 5) bits += "0";
+    for (let i = 0; i < bits.length; i += 5) out += B32[parseInt(bits.substr(i, 5), 2)];
+    while (out.length % 8) out += "=";
+    return bytes.length ? out : "";
+  }
+  function toNato(str) {
+    const skipped = new Set();
+    const words = str.toLowerCase().split(/\s+/).filter(Boolean).map(w =>
+      [...w].map(ch => { if (NATO[ch]) return NATO[ch]; skipped.add(ch); return null; })
+        .filter(Boolean).join(" ")).filter(Boolean);
+    return { value: words.join(" / "), skipped: [...skipped] };
+  }
+  function rot13(str) {
+    return str.replace(/[a-z]/gi, c => {
+      const base = c <= "Z" ? 65 : 97;
+      return String.fromCharCode((c.charCodeAt(0) - base + 13) % 26 + base);
+    });
+  }
+  function toUrl(str) { return encodeURIComponent(str).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase()); }
+  function toHtml(str) {
+    return [...str].map(ch => {
+      if (HTML_NAMED[ch]) return `&${HTML_NAMED[ch]};`;
+      const cp = ch.codePointAt(0);
+      return cp > 126 || cp < 32 ? `&#${cp};` : ch;
+    }).join("");
+  }
   function toLeet(str) { return [...str].map(ch => LEET[ch.toLowerCase()] || ch).join(""); }
 
   function encode(str) {
     if (fmt === "morse") return toMorse(str);
+    if (fmt === "nato") return toNato(str);
+    if (fmt === "rot13") return { value: rot13(str), skipped: [] };
+    if (fmt === "url") return { value: toUrl(str), skipped: [] };
+    if (fmt === "html") return { value: toHtml(str), skipped: [] };
     if (fmt === "leet") return { value: toLeet(str), skipped: [] };
     const bytes = enc.encode(str);
     if (fmt === "base64") return { value: toBase64(bytes), skipped: [] };
     if (fmt === "base85") return { value: toBase85(bytes), skipped: [] };
+    if (fmt === "base32") return { value: toBase32(bytes), skipped: [] };
     return { value: bytesToDigits(bytes), skipped: [] };
   }
 
@@ -332,12 +385,56 @@
     if (bad.length) return { error: `"${bad[0]}" isn't a Morse letter. Use dots, dashes, spaces between letters and / between words.` };
     return { str };
   }
+  function fromBase32(s) {
+    const clean = s.replace(/[\s=]/g, "").toUpperCase();
+    if (!clean) return { bytes: new Uint8Array(0) };
+    let bits = "";
+    for (const ch of clean) {
+      const i = B32.indexOf(ch);
+      if (i < 0) return { error: `"${ch}" isn't a Base32 character. Base32 uses A–Z and 2–7.` };
+      bits += i.toString(2).padStart(5, "0");
+    }
+    const n = Math.floor(bits.length / 8), bytes = new Uint8Array(n);
+    for (let i = 0; i < n; i++) bytes[i] = parseInt(bits.substr(i * 8, 8), 2);
+    return { bytes };
+  }
+  function fromNato(s) {
+    const words = s.trim().split(/\s*[/|]\s*/).filter(Boolean);
+    const bad = [];
+    const str = words.map(w => w.split(/\s+/).filter(Boolean).map(tok => {
+      const k = UNNATO[tok.toLowerCase()];
+      if (k) return k;
+      bad.push(tok); return "";
+    }).join("")).join(" ");
+    if (bad.length) return { error: `"${bad[0]}" isn't a NATO code word. Use names like Alfa, Bravo, Charlie, with / between words.` };
+    return { str };
+  }
+  function fromUrl(s) {
+    try { return { str: decodeURIComponent(s.replace(/\+/g, " ")) }; }
+    catch { return { error: "That isn't valid URL encoding. A % has to be followed by two hex digits." }; }
+  }
+  function fromHtml(s) {
+    const named = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };
+    return { str: s.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, body) => {
+      if (body[0] === "#") {
+        const cp = body[1] === "x" || body[1] === "X"
+          ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+        return Number.isFinite(cp) && cp >= 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : m;
+      }
+      return named[body.toLowerCase()] ?? m;
+    }) };
+  }
   function fromLeet(s) { return { str: [...s].map(ch => UNLEET[ch] || ch).join("") }; }
 
   function decode(s) {
     if (fmt === "morse") return fromMorse(s);
+    if (fmt === "nato") return fromNato(s);
+    if (fmt === "rot13") return { str: rot13(s) };
+    if (fmt === "url") return fromUrl(s);
+    if (fmt === "html") return fromHtml(s);
     if (fmt === "leet") return fromLeet(s);
-    const r = fmt === "base64" ? fromBase64(s) : fmt === "base85" ? fromBase85(s) : digitsToBytes(s);
+    const r = fmt === "base64" ? fromBase64(s) : fmt === "base85" ? fromBase85(s)
+      : fmt === "base32" ? fromBase32(s) : digitsToBytes(s);
     if (r.error) return r;
     try { return { str: decStrict.decode(r.bytes), bytes: r.bytes }; }
     catch { return { str: decLoose.decode(r.bytes), bytes: r.bytes, warn: "These bytes aren't valid text. Anything unreadable shows as ￼." }; }
@@ -357,7 +454,7 @@
     show(err, "");
     show(note, r.skipped && r.skipped.length
       ? `Left out: ${r.skipped.map(c => `"${c}"`).join(", ")} — Morse has no code for these.` : "");
-    const bytes = FORMATS[fmt].byteWise || fmt === "base64" || fmt === "base85" ? enc.encode(text.value).length : null;
+    const bytes = FORMATS[fmt].byteWise || ["base64", "base85", "base32"].includes(fmt) ? enc.encode(text.value).length : null;
     $("textStat").textContent = counts(text.value, bytes);
     $("outStat").textContent = `${[...out.value].length} characters`;
   }
@@ -382,11 +479,18 @@
     $("prefixWrap").hidden = key !== "hex";
     upper.parentElement.hidden = key !== "hex";
     out.placeholder = { hex: "48 65 6C 6C 6F", binary: "01001000 01101001", decimal: "72 105",
-      octal: "110 151", base64: "SGVsbG8=", base85: "NW0", morse: ".... . .-.. .-.. ---",
-      leet: "H3110" }[key];
+      octal: "110 151", base64: "SGVsbG8=", base85: "NW0", base32: "JBSWY3DP",
+      morse: ".... . .-.. .-.. ---", nato: "Hotel Echo Lima Lima Oscar",
+      rot13: "Uryyb", url: "Hello%20there", html: "caf&#233;", leet: "H3110" }[key];
     try { localStorage.setItem("hex-fmt", key); } catch {}
     fromText();
-    if (key === "leet") show(note, "Leet is a one-way swap: turning it back gives lowercase, and 1 always comes back as l.");
+    const notes = {
+      leet: "Leet is a one-way swap: turning it back gives lowercase, and 1 always comes back as l.",
+      morse: "Morse has no capitals or punctuation beyond the basics, so text comes back lowercase.",
+      nato: "NATO code words have no capitals, so text comes back lowercase.",
+      rot13: "ROT13 is its own reverse — running it twice gives the original text back."
+    };
+    if (notes[key]) show(note, notes[key]);
   }
 
   const fmtBar = $("formats");
