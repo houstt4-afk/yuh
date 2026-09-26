@@ -172,6 +172,7 @@
     <summary>What each format is</summary>
     <div class="scroll">
       <table>
+        <tr><td>Hexspeak</td><td>Your whole sentence with hex digits swapped in for the letters that have them. <code>this dumb is claude</code> → <code>7h15 dumb 15 c1aude</code></td></tr>
         <tr><td>Code</td><td>Any text at all squeezed down to 16 characters, like <code>a4f3c91e07b2d856</code>. One-way: the same text always gives the same code, but a code can't be turned back.</td></tr>
         <tr><td>Hex</td><td>Each byte as two digits, 0–9 and a–f. <code>Hi</code> → <code>48 69</code></td></tr>
         <tr><td>Binary</td><td>Each byte as eight 1s and 0s. <code>Hi</code> → <code>01001000 01101001</code></td></tr>
@@ -241,6 +242,7 @@
   const B85 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~";
 
   const FORMATS = {
+    hexspeak: { label: "Hexspeak" },
     code:   { label: "Code", oneWay: true },
     hex:    { label: "Hex",     radix: 16, pad: 2, byteWise: true },
     binary: { label: "Binary",  radix: 2,  pad: 8, byteWise: true },
@@ -333,9 +335,20 @@
     for (const b of enc.encode(str)) { h ^= BigInt(b); h = (h * PRIME) & MASK; }
     return h.toString(16).padStart(16, "0");
   }
+  // Whole-sentence hexspeak: swap only the letters hex has a digit for, leave the rest alone.
+  // "this dumb is claude" -> "7h15 dumb 15 c1aude"
+  function toHexspeak(str) { return [...str].map(ch => {
+    const low = ch.toLowerCase(), h = TO_HEX_ONLY[low];
+    return h && !/[a-f]/.test(h) ? h : ch;
+  }).join(""); }
+  function fromHexspeak(str) {
+    const back = { 0: "o", 1: "i", 5: "s", 7: "t", 6: "g", 2: "z" };
+    return [...str].map(ch => back[ch] || ch).join("");
+  }
   function toLeet(str) { return [...str].map(ch => LEET[ch.toLowerCase()] || ch).join(""); }
 
   function encode(str) {
+    if (fmt === "hexspeak") return { value: toHexspeak(str), skipped: [] };
     if (fmt === "code") return { value: str ? toCode(str) : "", skipped: [] };
     if (fmt === "morse") return toMorse(str);
     if (fmt === "nato") return toNato(str);
@@ -465,6 +478,7 @@
 
   function decode(s) {
     if (FORMATS[fmt].oneWay) return { error: "A code is one-way — it can't be turned back into text. Type in the Text box instead." };
+    if (fmt === "hexspeak") return { str: fromHexspeak(s) };
     if (fmt === "morse") return fromMorse(s);
     if (fmt === "nato") return fromNato(s);
     if (fmt === "rot13") return { str: rot13(s) };
@@ -522,12 +536,13 @@
       octal: "110 151", base64: "SGVsbG8=", base85: "NW0", base32: "JBSWY3DP",
       morse: ".... . .-.. .-.. ---", nato: "Hotel Echo Lima Lima Oscar",
       rot13: "Uryyb", url: "Hello%20there", html: "caf&#233;", leet: "H3110",
-      code: "a4f3c91e07b2d856" }[key];
+      code: "a4f3c91e07b2d856", hexspeak: "7h15 15 hex5peak" }[key];
     try { localStorage.setItem("hex-fmt", key); } catch {}
     const notes = {
       leet: "Leet is a one-way swap: turning it back gives lowercase, and 1 always comes back as l.",
       morse: "Morse has no capitals or punctuation beyond the basics, so text comes back lowercase.",
       nato: "NATO code words have no capitals, so text comes back lowercase.",
+      hexspeak: "Only the letters hex has a digit for change: o, i, l, s, t, g, z. Everything else stays as it is.",
       code: "Type anything — any letters, spaces, emoji — and you get a 16-character code. The same text always gives the same code, and it only goes one way.",
       rot13: "ROT13 is its own reverse — running it twice gives the original text back."
     };
@@ -575,6 +590,7 @@
   // Type your own word: swap letters for hex digits, then hide it in a random code
   const TO_HEX = { o: "0", i: "1", l: "1", s: "5", t: "7", g: "6", z: "2",
     a: "a", b: "b", c: "c", d: "d", e: "e", f: "f" };
+  const TO_HEX_ONLY = { o: "0", i: "1", l: "1", s: "5", t: "7", g: "6", z: "2" };
   function wordToHex(word) {
     const clean = word.toLowerCase().replace(/\s+/g, "");
     if (!clean) return { error: "Type a word first." };
