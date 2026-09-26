@@ -676,8 +676,8 @@
   try { $("wordIn").value = localStorage.getItem("hex-mywords") || ""; } catch {}
   saveWords();
 
-  let saved = "hex";
-  try { saved = localStorage.getItem("hex-fmt") || "hex"; } catch {}
-  setFormat(FORMATS[saved] ? saved : "hex");
+  let saved = "code";
+  try { saved = localStorage.getItem("hex-fmt") || "code"; } catch {}
+  setFormat(FORMATS[saved] ? saved : "code");
 })();
 </script>
