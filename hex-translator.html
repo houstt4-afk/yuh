@@ -119,9 +119,9 @@
   </div>
 
   <div class="random">
-    <label class="rlabel" for="wordIn">Hide a word</label>
-    <input id="wordIn" type="text" placeholder="coast" autocomplete="off" spellcheck="false">
-    <button type="button" id="wordGo">Hide it</button>
+    <label class="rlabel" for="wordIn">My words</label>
+    <input id="wordIn" type="text" placeholder="coast, tea, goddess" autocomplete="off" spellcheck="false">
+    <button type="button" id="wordClear">Clear</button>
   </div>
   <div class="rout" id="rOut"></div>
 
@@ -557,17 +557,19 @@
     return [...buf].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, n);
   }
   function randomCode() {
-    const [w, plain] = pick(WORDS);
+    const [w, plain] = pick(activeList());
+    if (w.length >= 16) return { value: w.slice(0, 16), hint: `${w} — ${plain}` };
     const filler = randHex(16), at = crypto.getRandomValues(new Uint32Array(1))[0] % (17 - w.length);
     return { value: filler.slice(0, at) + w + filler.slice(at + w.length), hint: `hiding "${w}" — ${plain}` };
   }
   function randomWord() {
-    const [w, plain] = pick(WORDS);
+    const [w, plain] = pick(activeList());
     return { value: w, hint: `${w} — ${plain}` };
   }
   function randomSentence() {
+    const list = activeList(), want = Math.min(4, list.length);
     const seen = new Set(), out = [];
-    while (out.length < 4) { const p = pick(WORDS); if (!seen.has(p[0])) { seen.add(p[0]); out.push(p); } }
+    while (out.length < want) { const p = pick(list); if (!seen.has(p[0])) { seen.add(p[0]); out.push(p); } }
     return { value: out.map(p => p[0]).join(" "), hint: out.map(p => p[1]).join(" ") };
   }
   // Type your own word: swap letters for hex digits, then hide it in a random code
@@ -576,38 +578,44 @@
   function wordToHex(word) {
     const clean = word.toLowerCase().replace(/\s+/g, "");
     if (!clean) return { error: "Type a word first." };
-    if (clean.length > 16) return { error: `"${clean}" is ${clean.length} letters — 16 is the most that fits.` };
-    const bad = [];
+    if (clean.length > 16) return { error: `"${clean}" is ${clean.length} characters — 16 is the most that fits.` };
+    const kept = [];
     const hexed = [...clean].map(ch => {
-      if (/[0-9]/.test(ch)) return ch;
+      if (/[0-9a-f]/.test(ch)) return ch;
       const h = TO_HEX[ch];
       if (h) return h;
-      if (!bad.includes(ch)) bad.push(ch);
-      return "";
+      if (!kept.includes(ch)) kept.push(ch);   // no hex stand-in — goes in as-is
+      return ch;
     }).join("");
-    if (bad.length) return { error: `Hex can't spell ${bad.map(c => `"${c}"`).join(", ")}. Usable letters: a b c d e f g i l o s t z, plus digits.` };
-    return { hexed, clean };
+    return { hexed, clean, kept };
   }
-  function hideWord() {
-    const r = wordToHex($("wordIn").value);
-    const el = $("rOut");
-    if (r.error) { el.textContent = r.error; el.classList.add("bad"); return; }
+
+  // The words you type here replace the built-in list for Code, Word and Sentence
+  function myWords() {
+    return $("wordIn").value.split(/[,\n]+|\s{2,}|\s+/).map(w => w.trim()).filter(Boolean);
+  }
+  function myPairs() {
+    const out = [];
+    for (const w of myWords()) {
+      const r = wordToHex(w);
+      if (!r.error) out.push([r.hexed, r.clean]);
+    }
+    return out;
+  }
+  function activeList() {
+    const mine = myPairs();
+    return mine.length ? mine : WORDS;
+  }
+  function saveWords() {
+    try { localStorage.setItem("hex-mywords", $("wordIn").value); } catch {}
+    const mine = myPairs(), el = $("rOut");
     el.classList.remove("bad");
-    const filler = randHex(16);
-    const at = crypto.getRandomValues(new Uint32Array(1))[0] % (17 - r.hexed.length);
-    text.value = filler.slice(0, at) + r.hexed + filler.slice(at + r.hexed.length);
-    el.textContent = `hiding "${r.hexed}" — ${r.clean}`;
-    fromText();
+    el.textContent = mine.length
+      ? `Random is using your ${mine.length} word${mine.length === 1 ? "" : "s"}: ${mine.map(p => p[0]).join(", ")}`
+      : ($("wordIn").value.trim() ? "" : "Random is using the built-in words. Type your own above to swap them in.");
   }
-  $("wordGo").addEventListener("click", hideWord);
-  $("wordIn").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); hideWord(); } });
-  $("wordIn").addEventListener("input", () => {
-    const el = $("rOut"), v = $("wordIn").value.trim();
-    if (!v) { el.textContent = ""; el.classList.remove("bad"); return; }
-    const r = wordToHex(v);
-    if (r.error) { el.textContent = r.error; el.classList.add("bad"); }
-    else { el.textContent = `${v.toLowerCase()} spells ${r.hexed} — hit Hide it`; el.classList.remove("bad"); }
-  });
+  $("wordIn").addEventListener("input", saveWords);
+  $("wordClear").addEventListener("click", () => { $("wordIn").value = ""; saveWords(); $("wordIn").focus(); });
 
   function drop(gen) {
     const r = gen();
@@ -629,11 +637,7 @@
     fmtBar.appendChild(b);
   }
 
-  text.addEventListener("input", () => {
-    const el = $("rOut");
-    if (!$("wordIn").value.trim()) { el.textContent = ""; el.classList.remove("bad"); }
-    fromText();
-  });
+  text.addEventListener("input", fromText);
   out.addEventListener("input", fromOut);
   [upper, prefix, sep].forEach(el => el.addEventListener("change", fromText));
 
@@ -652,6 +656,9 @@
   }
   $("clearText").addEventListener("click", () => { text.value = ""; fromText(); text.focus(); });
   $("clearOut").addEventListener("click", () => { out.value = ""; text.value = ""; show(err, ""); show(note, ""); $("textStat").textContent = counts("", 0); $("outStat").textContent = "0 characters"; out.focus(); });
+
+  try { $("wordIn").value = localStorage.getItem("hex-mywords") || ""; } catch {}
+  saveWords();
 
   let saved = "hex";
   try { saved = localStorage.getItem("hex-fmt") || "hex"; } catch {}
