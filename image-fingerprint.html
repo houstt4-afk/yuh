@@ -379,7 +379,7 @@
     const limits = await sample.limits().catch(() => null);
     if (!limits?.images) {
       $("describeBtn").disabled = true;
-      $("descHint").textContent = "This view can't send pictures to Claude, so describing isn't available here.";
+      $("descHint").textContent = "This viewer can't send pictures to Claude. Try opening this page in a browser at claude.ai while signed in — image support varies by where the page is opened. Every code above still works here.";
       return;
     }
     $("describeBtn").addEventListener("click", async () => {
