@@ -85,6 +85,7 @@
     white-space: pre-wrap; overflow-wrap: anywhere;
   }
   .value.big { font-size: 22px; letter-spacing: .04em; }
+  .value.tight { font-size: 9px; line-height: 1.05; letter-spacing: 0; white-space: pre; overflow-x: auto; max-height: 260px; }
   #quickCode { font-size: 19px; }
 
   .grid8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; width: 104px; aspect-ratio: 1; max-width: 100%; }
@@ -116,7 +117,7 @@
 <div class="wrap">
   <header>
     <h1>Photo Fingerprint</h1>
-    <p>Pick a photo and get every code for it — the same formats as the hex translator — plus a written description of what's in it. The photo stays on your device.</p>
+    <p>Pick a photo and get every code for it — the same formats as the hex translator — plus a readout of what's actually in it. The photo stays on your device.</p>
   </header>
 
   <section class="card">
@@ -181,6 +182,9 @@
       <li><strong>Fingerprint</strong> — 16 characters too, but based on what the photo <em>looks like</em>. A resized or re-saved copy keeps nearly the same fingerprint, which is how the compare below works.</li>
       <li><strong>Hex, Binary, Decimal, Octal</strong> — every byte of the file written out in that base.</li>
       <li><strong>Base64, Base85, Base32</strong> — the whole file as text, the way an email attachment or a data URL carries it.</li>
+      <li><strong>Profile</strong> — what the pixels say: shape, brightness, contrast, how colourful and warm it is, how busy, and its main colours by name.</li>
+      <li><strong>Colours</strong> — the six colours that take up the most of the picture, with their share.</li>
+      <li><strong>ASCII</strong> — the picture drawn in text characters, light to dark.</li>
       <li>To find a photo on the internet, use <a href="https://lens.google.com" target="_blank" rel="noopener">Google Lens</a> or <a href="https://tineye.com" target="_blank" rel="noopener">TinEye</a> — they compute a fingerprint like this against billions of images.</li>
     </ul>
   </details>
@@ -268,6 +272,143 @@
     return { bits, hex };
   }
 
+  // ---- what the pixels say --------------------------------------------
+  const NAMED = [
+    ["black", 0, 0, 0], ["white", 255, 255, 255], ["grey", 128, 128, 128],
+    ["red", 200, 40, 40], ["dark red", 120, 20, 20], ["orange", 235, 140, 40],
+    ["brown", 120, 80, 45], ["tan", 205, 175, 130], ["gold", 220, 180, 60],
+    ["yellow", 240, 225, 90], ["olive", 130, 130, 50], ["lime", 150, 210, 70],
+    ["green", 60, 150, 70], ["dark green", 30, 85, 45], ["teal", 45, 145, 140],
+    ["cyan", 110, 210, 220], ["sky blue", 125, 185, 225], ["blue", 50, 95, 195],
+    ["navy", 25, 40, 95], ["purple", 120, 70, 170], ["magenta", 200, 70, 165],
+    ["pink", 235, 150, 175], ["cream", 245, 235, 210], ["charcoal", 55, 60, 65]
+  ];
+  function colorName(r, g, b) {
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    const sat = mx ? (mx - mn) / mx : 0;
+    if (sat < 0.12) {                       // near-neutral: name it by lightness, not hue
+      const l = (r * 0.299 + g * 0.587 + b * 0.114);
+      return l < 28 ? "black" : l < 75 ? "charcoal" : l < 130 ? "dark grey"
+        : l < 185 ? "grey" : l < 232 ? "light grey" : "white";
+    }
+    let best = NAMED[0], bd = Infinity;
+    for (const c of NAMED) {
+      const d = (r - c[1]) ** 2 * 0.3 + (g - c[2]) ** 2 * 0.59 + (b - c[3]) ** 2 * 0.11;
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best[0];
+  }
+  const hex2 = n => Math.round(n).toString(16).padStart(2, "0");
+
+  function pixels(img, w) {
+    const h = Math.max(1, Math.round(w * img.naturalHeight / img.naturalWidth));
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const cx = c.getContext("2d", { willReadFrequently: true });
+    cx.imageSmoothingQuality = "high"; cx.drawImage(img, 0, 0, w, h);
+    return { data: cx.getImageData(0, 0, w, h).data, w, h };
+  }
+
+  function palette(img) {
+    const { data } = pixels(img, 96);
+    const bins = new Map();
+    for (let i = 0; i < data.length; i += 4) {
+      const key = (data[i] >> 4 << 8) | (data[i + 1] >> 4 << 4) | (data[i + 2] >> 4);
+      let e = bins.get(key);
+      if (!e) bins.set(key, e = { n: 0, r: 0, g: 0, b: 0 });
+      e.n++; e.r += data[i]; e.g += data[i + 1]; e.b += data[i + 2];
+    }
+    const total = data.length / 4;
+    return [...bins.values()].sort((a, b) => b.n - a.n).slice(0, 6).map(e => ({
+      r: e.r / e.n, g: e.g / e.n, b: e.b / e.n,
+      share: e.n / total
+    }));
+  }
+
+  function stats(img) {
+    const { data, w, h } = pixels(img, 128);
+    let sum = 0, sum2 = 0, sat = 0, warm = 0, n = 0;
+    const lum = new Float64Array(w * h);
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const l = r * 0.299 + g * 0.587 + b * 0.114;
+      lum[p] = l; sum += l; sum2 += l * l; n++;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      sat += mx ? (mx - mn) / mx : 0;
+      warm += (r - b);
+    }
+    const mean = sum / n, sd = Math.sqrt(Math.max(0, sum2 / n - mean * mean));
+    let edge = 0;
+    for (let y = 1; y < h; y++) for (let x = 1; x < w; x++) {
+      const p = y * w + x;
+      edge += Math.abs(lum[p] - lum[p - 1]) + Math.abs(lum[p] - lum[p - w]);
+    }
+    return { mean, sd, sat: sat / n, warm: warm / n, edge: edge / (2 * n), w: img.naturalWidth, h: img.naturalHeight };
+  }
+
+  function profile(img) {
+    const s = stats(img), pal = palette(img), lines = [];
+    const ratio = s.w / s.h;
+    const shape = Math.abs(ratio - 1) < 0.06 ? "square"
+      : ratio > 1.6 ? "wide landscape" : ratio > 1 ? "landscape"
+      : ratio < 0.62 ? "tall portrait" : "portrait";
+    lines.push(`Shape       ${s.w} × ${s.h} — ${shape} (${ratio.toFixed(2)}:1)`);
+    lines.push(`Brightness  ${(s.mean / 255 * 100).toFixed(0)}% — ${
+      s.mean < 60 ? "very dark" : s.mean < 105 ? "dark" : s.mean < 160 ? "mid-toned" : s.mean < 205 ? "bright" : "very bright"}`);
+    lines.push(`Contrast    ${(s.sd / 128 * 100).toFixed(0)}% — ${
+      s.sd < 30 ? "flat, little range" : s.sd < 55 ? "gentle" : s.sd < 80 ? "punchy" : "very high contrast"}`);
+    lines.push(`Colour      ${(s.sat * 100).toFixed(0)}% saturated — ${
+      s.sat < 0.1 ? "almost greyscale" : s.sat < 0.25 ? "muted" : s.sat < 0.45 ? "natural" : "vivid"}`);
+    lines.push(`Warmth      ${s.warm > 18 ? "warm — reds and yellows lead" : s.warm < -18 ? "cool — blues lead" : "neutral, neither warm nor cool"}`);
+    lines.push(`Detail      ${
+      s.edge < 4 ? "very smooth — flat areas, few edges" : s.edge < 9 ? "smooth" : s.edge < 18 ? "some texture" : "busy, lots of fine detail"}`);
+    lines.push("");
+    lines.push("Main colours");
+    for (const c of pal) {
+      lines.push(`  #${hex2(c.r)}${hex2(c.g)}${hex2(c.b)}  ${(c.share * 100 < 1 ? "<1" : (c.share * 100).toFixed(0)).padStart(3)}%  ${colorName(c.r, c.g, c.b)}`);
+    }
+    lines.push("");
+    lines.push(`In short: a ${shape} picture, ${
+      s.mean < 105 ? "dark" : s.mean > 175 ? "bright" : "mid-toned"}, ${
+      s.sat < 0.15 ? "nearly colourless" : s.warm > 18 ? "warm-toned" : s.warm < -18 ? "cool-toned" : "neutral in tone"}, mostly ${
+      pal.slice(0, 2).map(c => colorName(c.r, c.g, c.b)).join(" and ")}.`);
+    return lines.join("\n");
+  }
+
+  function paletteText(img) {
+    const pal = palette(img);
+    return pal.map(c => {
+      const hx = `#${hex2(c.r)}${hex2(c.g)}${hex2(c.b)}`;
+      const bar = "█".repeat(Math.max(1, Math.round(c.share * 40)));
+      return `${hx}  ${(c.share * 100 < 0.1 ? "<0.1" : (c.share * 100).toFixed(1)).padStart(5)}%  ${bar}  ${colorName(c.r, c.g, c.b)}`;
+    }).join("\n");
+  }
+
+  function ascii(img) {
+    const W = 56, RAMP = "@%#*+=-:. ";
+    const h = Math.max(1, Math.round(W * img.naturalHeight / img.naturalWidth * 0.5));
+    const c = document.createElement("canvas"); c.width = W; c.height = h;
+    const cx = c.getContext("2d", { willReadFrequently: true });
+    cx.imageSmoothingQuality = "high"; cx.drawImage(img, 0, 0, W, h);
+    const d = cx.getImageData(0, 0, W, h).data;
+    let lo = 255, hi = 0;
+    const lum = new Float64Array(W * h);
+    for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+      lum[p] = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+      if (lum[p] < lo) lo = lum[p];
+      if (lum[p] > hi) hi = lum[p];
+    }
+    const span = Math.max(1, hi - lo);
+    let out = "";
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < W; x++) {
+        const t = (lum[y * W + x] - lo) / span;
+        out += RAMP[Math.min(RAMP.length - 1, Math.floor(t * RAMP.length))];
+      }
+      out += "\n";
+    }
+    return out.trimEnd();
+  }
+
   // ---- formats --------------------------------------------------------
   const FORMATS = {
     code:        { label: "Code",        big: true,  of: s => s.code },
@@ -278,7 +419,10 @@
     octal:       { label: "Octal",       of: s => digits(s.bytes, 8, 0) },
     base64:      { label: "Base64",      of: s => toBase64(s.bytes) },
     base85:      { label: "Base85",      of: s => toBase85(s.bytes) },
-    base32:      { label: "Base32",      of: s => toBase32(s.bytes) }
+    base32:      { label: "Base32",      of: s => toBase32(s.bytes) },
+    profile:     { label: "Profile",     of: s => profile(s.img) },
+    colors:      { label: "Colours",     of: s => paletteText(s.img) },
+    ascii:       { label: "ASCII",       of: s => ascii(s.img), tight: true }
   };
   const cache = new Map();
   function valueFor(key) {
@@ -290,6 +434,7 @@
     const el = $("value");
     $("fmtLabel").textContent = FORMATS[fmt].label;
     el.classList.toggle("big", !!FORMATS[fmt].big);
+    el.classList.toggle("tight", !!FORMATS[fmt].tight);
     document.querySelectorAll("#formats button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.fmt === fmt)));
     if (!state.A) { el.textContent = ""; $("valStat").textContent = ""; return; }
     el.textContent = "Working…";
@@ -344,7 +489,7 @@
     const src = url || URL.createObjectURL(blob);
     const img = await loadImage(src);
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    const s = { blob, bytes, name, src, hash: phash(img), code: toCode(bytes) };
+    const s = { blob, bytes, name, src, img, hash: phash(img), code: toCode(bytes) };
     state[slot] = s;
     $("thumb" + slot).src = src;
     $("name" + slot).textContent = `${name} · ${img.naturalWidth}×${img.naturalHeight} · ${(blob.size / 1024).toFixed(0)} KB`;
