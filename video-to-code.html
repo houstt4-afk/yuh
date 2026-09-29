@@ -1,0 +1,545 @@
+<title>Video Fingerprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f3f5f4; --surface: #ffffff; --sunken: #e9edec;
+    --ink: #172024; --muted: #5b6a70; --line: #d8e0de;
+    --accent: #0d6f6e; --accent-soft: #dcefed; --on-accent: #ffffff;
+    --bad: #b3372b; --bad-soft: #fbe6e2; --cut: #a8541f;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0f1517; --surface: #172024; --sunken: #101718; --ink: #e6eeec; --muted: #93a4a8;
+      --line: #2a373b; --accent: #4fc2bd; --accent-soft: #173a3a; --on-accent: #0f1517;
+      --bad: #ef7b6f; --bad-soft: #3a1a14; --cut: #e0a066;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1517; --surface: #172024; --sunken: #101718; --ink: #e6eeec; --muted: #93a4a8;
+    --line: #2a373b; --accent: #4fc2bd; --accent-soft: #173a3a; --on-accent: #0f1517;
+    --bad: #ef7b6f; --bad-soft: #3a1a14; --cut: #e0a066;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); padding: 0 16px; }
+  .wrap { max-width: 900px; margin: 0 auto; padding-block: 28px 48px; display: grid; gap: 18px; }
+  header { display: grid; gap: 6px; }
+  h1 { margin: 0; font: 700 clamp(28px, 6vw, 40px)/1.1 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+  .card h2 { margin: 0; font: 500 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .pick {
+    display: flex; align-items: center; justify-content: center;
+    font: 500 15px/1 var(--body); color: var(--on-accent); background: var(--accent);
+    border-radius: 8px; padding: 13px 16px; cursor: pointer; border: 0;
+  }
+  .pick:focus-within { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+  .pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+  button {
+    font: 500 13px/1 var(--body); padding: 8px 11px; border-radius: 7px; cursor: pointer;
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+  }
+  button:hover:not(:disabled) { color: var(--ink); border-color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: .5; cursor: default; }
+  button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .go { color: var(--on-accent); background: var(--accent); border-color: var(--accent); font-size: 14px; padding: 10px 14px; }
+
+  .code { font: 500 19px/1.3 var(--mono); letter-spacing: .04em; overflow-wrap: anywhere; }
+  .label { font: 500 11px/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .small { font-size: 13px; color: var(--muted); }
+
+  .strip { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+  .strip figure { margin: 0; display: grid; gap: 3px; flex: 0 0 auto; }
+  .strip img { width: 76px; height: 56px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); background: var(--sunken); display: block; }
+  .strip img.cut { border-color: var(--cut); border-width: 2px; }
+  .strip figcaption { font: 11px/1 var(--mono); color: var(--muted); text-align: center; }
+
+  .formats { display: flex; gap: 6px; flex-wrap: wrap; }
+  .value {
+    margin: 0; font: 500 14px/1.6 var(--mono); background: var(--sunken);
+    border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+    max-height: 340px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .value.big { font-size: 22px; letter-spacing: .04em; }
+  .value.tight { font-size: 8px; line-height: 1.05; white-space: pre; overflow-x: auto; }
+
+  progress { width: 100%; height: 6px; }
+  .err { color: var(--bad); background: var(--bad-soft); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+  .desc { white-space: pre-wrap; margin: 0; }
+  [hidden] { display: none !important; }
+
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+  summary { font: 600 15px/1.3 var(--display); cursor: pointer; }
+  details p, details li { color: var(--muted); max-width: 66ch; }
+  details ul { padding-left: 20px; margin: 8px 0 0; }
+  code { font-family: var(--mono); font-size: .92em; }
+  a { color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Video Fingerprint</h1>
+    <p>Pick a video and get a code for it, a fingerprint for every shot, and a written run-down of what happens and when. Nothing is uploaded — the frames are read on your device.</p>
+  </header>
+
+  <section class="card">
+    <div class="head"><h2>Video</h2><span class="small" id="fileStat"></span></div>
+    <label class="pick">Choose a video<input type="file" accept="video/*" id="file"></label>
+    <div class="small" id="status">No video yet. Most phone recordings, MP4 and WebM files work.</div>
+    <progress id="prog" value="0" max="1" hidden></progress>
+    <div>
+      <span class="label">Code</span>
+      <div class="code" id="quickCode">—</div>
+    </div>
+    <div class="strip" id="strip"></div>
+    <div class="small" id="stripNote" hidden>Frames sampled across the video. An orange border marks a cut.</div>
+    <div class="err" id="err" hidden></div>
+  </section>
+
+  <section class="card">
+    <div class="head"><h2 id="fmtLabel">Story</h2><button type="button" id="copyVal">Copy</button></div>
+    <div class="formats" role="group" aria-label="Format" id="formats"></div>
+    <pre class="value" id="value">Pick a video to fill this in.</pre>
+    <span class="small" id="valStat"></span>
+  </section>
+
+  <section class="card" id="describeCard" hidden>
+    <div class="head"><h2>What Claude sees</h2></div>
+    <div class="formats">
+      <button type="button" class="go" id="describeBtn">Describe the video</button>
+      <button type="button" id="stopBtn" hidden>Stop</button>
+    </div>
+    <p class="desc" id="desc"></p>
+    <div class="err" id="descErr" hidden></div>
+    <span class="small" id="descHint">Sends the sampled frames to Claude on your own account and asks what happens in them.</span>
+  </section>
+
+  <details>
+    <summary>What each one is</summary>
+    <ul>
+      <li><strong>Story</strong> — the run-down: each shot with its start time, how long it lasts, how bright and colourful it is, how much movement there is, and its main colours.</li>
+      <li><strong>Profile</strong> — the whole video at a glance: length, size, shot count, pace, overall brightness and colour.</li>
+      <li><strong>Shots</strong> — one fingerprint per shot, so you can match a clip against another copy of it.</li>
+      <li><strong>Frames</strong> — the fingerprint of every sampled frame, with how much changed since the previous one.</li>
+      <li><strong>Code</strong> — the file squeezed to 16 characters (the first 4 MB of it, for a big video). Re-encode the video and it changes completely; the fingerprints above survive that.</li>
+      <li><strong>Colours</strong> — the colours that fill the most screen time across the whole video.</li>
+      <li><strong>ASCII</strong> — the keyframe of each shot drawn in text.</li>
+      <li><strong>Hex</strong> and <strong>Base64</strong> — the file's bytes. Video files are big, so these read the first 4 MB only.</li>
+    </ul>
+  </details>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const MAX_SHOWN = 6000, BYTE_CAP = 4 * 1024 * 1024, MAX_FRAMES = 40;
+  let V = null, fmt = "story";
+  const cache = new Map();
+
+  // ---- codes ----------------------------------------------------------
+  function toCode(bytes) {            // two 32-bit FNV-1a passes -> 16 hex chars, fast on big files
+    let a = 0x811c9dc5, b = 0x01000193;
+    for (let i = 0; i < bytes.length; i++) {
+      a = Math.imul(a ^ bytes[i], 16777619) >>> 0;
+      b = Math.imul(b + bytes[i] + i, 2246822519) >>> 0;
+      b = (b << 13 | b >>> 19) >>> 0;
+    }
+    return (a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0");
+  }
+  function toHex(bytes) {
+    const out = new Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) out[i] = bytes[i].toString(16).padStart(2, "0").toUpperCase();
+    return out.join(" ");
+  }
+  function toBase64(bytes) {
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    return btoa(bin);
+  }
+
+  // ---- frame fingerprints ---------------------------------------------
+  function dct2(m, N) {
+    const cos = [];
+    for (let k = 0; k < N; k++) { cos[k] = []; for (let n = 0; n < N; n++) cos[k][n] = Math.cos(Math.PI * k * (2 * n + 1) / (2 * N)); }
+    const tmp = Array.from({ length: N }, () => new Float64Array(N));
+    for (let k = 0; k < N; k++) for (let c = 0; c < N; c++) { let s = 0; for (let r = 0; r < N; r++) s += m[r][c] * cos[k][r]; tmp[k][c] = s; }
+    const out = Array.from({ length: N }, () => new Float64Array(N));
+    for (let r = 0; r < N; r++) for (let k = 0; k < N; k++) { let s = 0; for (let c = 0; c < N; c++) s += tmp[r][c] * cos[k][c]; out[r][k] = s; }
+    return out;
+  }
+  function phashFrom(cx, size) {
+    const big = size * 8, px = cx.getImageData(0, 0, big, big).data;
+    const m = Array.from({ length: size }, () => new Float64Array(size));
+    for (let y = 0; y < big; y++) for (let x = 0; x < big; x++) {
+      const i = (y * big + x) * 4;
+      m[y >> 3][x >> 3] += (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) / 64;
+    }
+    const d = dct2(m, size), low = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) low.push(d[r][c]);
+    const sorted = [...low].sort((a, b) => a - b), med = (sorted[31] + sorted[32]) / 2;
+    const bits = low.map(v => v > med ? 1 : 0);
+    let hex = "";
+    for (let i = 0; i < 64; i += 4) hex += ((bits[i] << 3) | (bits[i + 1] << 2) | (bits[i + 2] << 1) | bits[i + 3]).toString(16);
+    return { bits, hex };
+  }
+  const hamming = (a, b) => a.reduce((n, v, i) => n + (v !== b[i] ? 1 : 0), 0);
+
+  // ---- colour naming ---------------------------------------------------
+  const NAMED = [
+    ["red", 200, 40, 40], ["dark red", 120, 20, 20], ["orange", 235, 140, 40],
+    ["brown", 120, 80, 45], ["tan", 205, 175, 130], ["gold", 220, 180, 60],
+    ["yellow", 240, 225, 90], ["olive", 130, 130, 50], ["lime", 150, 210, 70],
+    ["green", 60, 150, 70], ["dark green", 30, 85, 45], ["teal", 45, 145, 140],
+    ["cyan", 110, 210, 220], ["sky blue", 125, 185, 225], ["blue", 50, 95, 195],
+    ["navy", 25, 40, 95], ["purple", 120, 70, 170], ["magenta", 200, 70, 165],
+    ["pink", 235, 150, 175], ["cream", 245, 235, 210], ["skin tone", 225, 180, 150]
+  ];
+  function colorName(r, g, b) {
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+    if (sat < 0.12) {
+      const l = r * 0.299 + g * 0.587 + b * 0.114;
+      return l < 28 ? "black" : l < 75 ? "charcoal" : l < 130 ? "dark grey"
+        : l < 185 ? "grey" : l < 232 ? "light grey" : "white";
+    }
+    let best = NAMED[0], bd = Infinity;
+    for (const c of NAMED) {
+      const d = (r - c[1]) ** 2 * 0.3 + (g - c[2]) ** 2 * 0.59 + (b - c[3]) ** 2 * 0.11;
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best[0];
+  }
+  const hex2 = n => Math.round(n).toString(16).padStart(2, "0");
+  const clock = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+
+  // ---- reading the video ------------------------------------------------
+  function frameStats(cx, w, h) {
+    const d = cx.getImageData(0, 0, w, h).data;
+    let sum = 0, sum2 = 0, sat = 0, warm = 0, n = 0;
+    const bins = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const l = r * 0.299 + g * 0.587 + b * 0.114;
+      sum += l; sum2 += l * l; n++;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      sat += mx ? (mx - mn) / mx : 0;
+      warm += r - b;
+      const key = (r >> 4 << 8) | (g >> 4 << 4) | (b >> 4);
+      let e = bins.get(key);
+      if (!e) bins.set(key, e = { n: 0, r: 0, g: 0, b: 0 });
+      e.n++; e.r += r; e.g += g; e.b += b;
+    }
+    const mean = sum / n;
+    return {
+      mean, sd: Math.sqrt(Math.max(0, sum2 / n - mean * mean)),
+      sat: sat / n, warm: warm / n,
+      colors: [...bins.values()].sort((a, b) => b.n - a.n).slice(0, 4)
+        .map(e => ({ r: e.r / e.n, g: e.g / e.n, b: e.b / e.n, share: e.n / n }))
+    };
+  }
+
+  function readVideo(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const v = document.createElement("video");
+      v.preload = "auto"; v.muted = true; v.playsInline = true; v.src = url;
+      v.onerror = () => reject(new Error("This browser can't play that video file."));
+      v.onloadedmetadata = async () => {
+        const dur = v.duration;
+        if (!isFinite(dur) || dur <= 0) return reject(new Error("Couldn't read the video's length."));
+        const N = Math.max(4, Math.min(MAX_FRAMES, Math.round(dur * 2)));
+        const times = Array.from({ length: N }, (_, i) => dur * (i + 0.5) / N);
+
+        const S = 32, big = S * 8;
+        const hc = document.createElement("canvas"); hc.width = big; hc.height = big;
+        const hx = hc.getContext("2d", { willReadFrequently: true });
+        const sc = document.createElement("canvas"); sc.width = 96; sc.height = 96;
+        const sx = sc.getContext("2d", { willReadFrequently: true });
+        const tc = document.createElement("canvas"); tc.width = 152; tc.height = 112;
+        const tx = tc.getContext("2d");
+
+        const frames = [];
+        for (let i = 0; i < times.length; i++) {
+          await new Promise(res => {
+            let settled = false;
+            const done = () => { if (settled) return; settled = true; clearTimeout(timer); v.removeEventListener("seeked", done); res(); };
+            const timer = setTimeout(done, 3000);   // some files never fire "seeked"
+            v.addEventListener("seeked", done);
+            v.currentTime = Math.min(times[i], Math.max(0, dur - 0.02));
+          });
+          hx.drawImage(v, 0, 0, big, big);
+          sx.drawImage(v, 0, 0, 96, 96);
+          tx.drawImage(v, 0, 0, tc.width, tc.height);
+          frames.push({
+            t: v.currentTime,
+            hash: phashFrom(hx, S),
+            stats: frameStats(sx, 96, 96),
+            thumb: tc.toDataURL("image/jpeg", 0.6)
+          });
+          onProgress((i + 1) / times.length);
+        }
+        URL.revokeObjectURL(url);
+        resolve({ duration: dur, width: v.videoWidth, height: v.videoHeight, frames });
+      };
+    });
+  }
+
+  // ---- shots -------------------------------------------------------------
+  function buildShots(frames) {
+    const CUT = 22, shots = [];
+    let start = 0;
+    for (let i = 1; i <= frames.length; i++) {
+      const isCut = i === frames.length || hamming(frames[i].hash.bits, frames[i - 1].hash.bits) >= CUT;
+      if (isCut) { shots.push({ from: start, to: i - 1 }); start = i; }
+    }
+    return shots.map(s => {
+      const list = frames.slice(s.from, s.to + 1);
+      const key = list[Math.floor(list.length / 2)];
+      const avg = k => list.reduce((n, f) => n + f.stats[k], 0) / list.length;
+      let motion = 0;
+      for (let i = 1; i < list.length; i++) motion += hamming(list[i].hash.bits, list[i - 1].hash.bits);
+      return {
+        start: list[0].t, end: list[list.length - 1].t, key, frames: list,
+        motion: list.length > 1 ? motion / (list.length - 1) : 0,
+        mean: avg("mean"), sd: avg("sd"), sat: avg("sat"), warm: avg("warm")
+      };
+    });
+  }
+
+  const brightWord = m => m < 60 ? "very dark" : m < 105 ? "dark" : m < 160 ? "mid-toned" : m < 205 ? "bright" : "very bright";
+  const motionWord = d => d < 3 ? "still" : d < 7 ? "barely moving" : d < 13 ? "gentle movement" : d < 20 ? "lots of movement" : "fast, chaotic movement";
+  const satWord = s => s < 0.1 ? "almost greyscale" : s < 0.25 ? "muted colour" : s < 0.45 ? "natural colour" : "vivid colour";
+
+  function story(V) {
+    const shots = V.shots, out = [];
+    out.push(`${clock(V.duration)} long · ${V.width}×${V.height} · ${shots.length} shot${shots.length === 1 ? "" : "s"}`);
+    out.push("");
+    shots.forEach((s, i) => {
+      const len = Math.max(0.1, s.end - s.start);
+      const cols = s.key.stats.colors.slice(0, 2).map(c => colorName(c.r, c.g, c.b));
+      out.push(`${clock(s.start)}  Shot ${i + 1}  (${len.toFixed(1)}s)`);
+      out.push(`        ${brightWord(s.mean)}, ${satWord(s.sat)}, ${motionWord(s.motion)}`);
+      out.push(`        mostly ${cols.join(" and ")}${s.warm > 18 ? ", warm-toned" : s.warm < -18 ? ", cool-toned" : ""}`);
+      out.push(`        fingerprint ${s.key.hash.hex}`);
+      if (i < shots.length - 1) out.push(`        ── cut ──`);
+    });
+    out.push("");
+    const meanAll = shots.reduce((n, s) => n + s.mean, 0) / shots.length;
+    const motionAll = shots.reduce((n, s) => n + s.motion, 0) / shots.length;
+    const pace = shots.length === 1 ? "one continuous shot"
+      : `${(V.duration / shots.length).toFixed(1)}s per shot on average — ${V.duration / shots.length < 2 ? "fast cutting" : V.duration / shots.length < 5 ? "a steady edit" : "long takes"}`;
+    out.push(`In short: ${clock(V.duration)} of ${brightWord(meanAll)} footage, ${motionWord(motionAll)}, ${pace}.`);
+    return out.join("\n");
+  }
+
+  function profile(V) {
+    const shots = V.shots, o = [];
+    const avg = k => V.frames.reduce((n, f) => n + f.stats[k], 0) / V.frames.length;
+    const ratio = V.width / V.height;
+    let motion = 0;
+    for (let i = 1; i < V.frames.length; i++) motion += hamming(V.frames[i].hash.bits, V.frames[i - 1].hash.bits);
+    motion /= Math.max(1, V.frames.length - 1);
+    o.push(`Length      ${clock(V.duration)} (${V.duration.toFixed(2)}s)`);
+    o.push(`Frame       ${V.width} × ${V.height} — ${Math.abs(ratio - 1) < .06 ? "square" : ratio > 1.6 ? "wide landscape" : ratio > 1 ? "landscape" : ratio < .62 ? "tall portrait (phone video)" : "portrait"} (${ratio.toFixed(2)}:1)`);
+    o.push(`Sampled     ${V.frames.length} frames, ${(V.frames.length / V.duration).toFixed(1)} per second`);
+    o.push(`Shots       ${shots.length}, ${(V.duration / shots.length).toFixed(1)}s each on average`);
+    o.push(`Movement    ${motion.toFixed(1)}/64 between frames — ${motionWord(motion)}`);
+    o.push(`Brightness  ${(avg("mean") / 255 * 100).toFixed(0)}% — ${brightWord(avg("mean"))}`);
+    o.push(`Contrast    ${(avg("sd") / 128 * 100).toFixed(0)}%`);
+    o.push(`Colour      ${(avg("sat") * 100).toFixed(0)}% saturated — ${satWord(avg("sat"))}`);
+    o.push(`Warmth      ${avg("warm") > 18 ? "warm — reds and yellows lead" : avg("warm") < -18 ? "cool — blues lead" : "neutral"}`);
+    o.push(`File        ${V.name} · ${(V.size / 1048576).toFixed(2)} MB · ${V.type || "unknown type"}`);
+    o.push(`Code        ${V.code}${V.capped ? " (from the first 4 MB)" : ""}`);
+    return o.join("\n");
+  }
+
+  function colours(V) {
+    const bins = new Map();
+    for (const f of V.frames) for (const c of f.stats.colors) {
+      const key = `${c.r >> 4}-${c.g >> 4}-${c.b >> 4}`;
+      let e = bins.get(key);
+      if (!e) bins.set(key, e = { w: 0, r: 0, g: 0, b: 0 });
+      e.w += c.share; e.r += c.r * c.share; e.g += c.g * c.share; e.b += c.b * c.share;
+    }
+    const all = [...bins.values()].sort((a, b) => b.w - a.w).slice(0, 8);
+    const total = all.reduce((n, e) => n + e.w, 0) || 1;
+    return all.map(e => {
+      const r = e.r / e.w, g = e.g / e.w, b = e.b / e.w, share = e.w / total;
+      return `#${hex2(r)}${hex2(g)}${hex2(b)}  ${(share * 100 < 0.1 ? "<0.1" : (share * 100).toFixed(1)).padStart(5)}%  ${"█".repeat(Math.max(1, Math.round(share * 36)))}  ${colorName(r, g, b)}`;
+    }).join("\n");
+  }
+
+  function shotHashes(V) {
+    return V.shots.map((s, i) =>
+      `${clock(s.start)}–${clock(s.end)}  shot ${String(i + 1).padStart(2)}  ${s.key.hash.hex}`).join("\n");
+  }
+  function frameHashes(V) {
+    return V.frames.map((f, i) => {
+      const d = i ? hamming(f.hash.bits, V.frames[i - 1].hash.bits) : 0;
+      return `${clock(f.t)}  ${f.hash.hex}  ${i ? `${String(d).padStart(2)}/64 changed${d >= 22 ? "  ← cut" : ""}` : "first frame"}`;
+    }).join("\n");
+  }
+
+  function asciiShots(V) {
+    const W = 48, RAMP = "@%#*+=-:. ";
+    return V.shots.map((s, i) => {
+      const img = s.key.thumbImg;
+      const h = Math.max(1, Math.round(W * V.height / V.width * 0.5));
+      const c = document.createElement("canvas"); c.width = W; c.height = h;
+      const cx = c.getContext("2d", { willReadFrequently: true });
+      cx.imageSmoothingQuality = "high"; cx.drawImage(img, 0, 0, W, h);
+      const d = cx.getImageData(0, 0, W, h).data;
+      const lum = new Float64Array(W * h);
+      let lo = 255, hi = 0;
+      for (let k = 0, p = 0; k < d.length; k += 4, p++) {
+        lum[p] = d[k] * 0.299 + d[k + 1] * 0.587 + d[k + 2] * 0.114;
+        if (lum[p] < lo) lo = lum[p];
+        if (lum[p] > hi) hi = lum[p];
+      }
+      const span = Math.max(1, hi - lo);
+      let art = "";
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < W; x++) {
+          const t = (lum[y * W + x] - lo) / span;
+          art += RAMP[Math.min(RAMP.length - 1, Math.floor(t * RAMP.length))];
+        }
+        art += "\n";
+      }
+      return `${clock(s.start)}  shot ${i + 1}\n${art}`;
+    }).join("\n");
+  }
+
+  // ---- formats ----------------------------------------------------------
+  const FORMATS = {
+    story:   { label: "Story",   of: story },
+    profile: { label: "Profile", of: profile },
+    shots:   { label: "Shots",   of: shotHashes },
+    frames:  { label: "Frames",  of: frameHashes },
+    code:    { label: "Code",    of: V => V.code, big: true },
+    colours: { label: "Colours", of: colours },
+    ascii:   { label: "ASCII",   of: asciiShots, tight: true },
+    hex:     { label: "Hex",     of: V => toHex(V.bytes) },
+    base64:  { label: "Base64",  of: V => toBase64(V.bytes) }
+  };
+  function showValue() {
+    const el = $("value");
+    $("fmtLabel").textContent = FORMATS[fmt].label;
+    el.classList.toggle("big", !!FORMATS[fmt].big);
+    el.classList.toggle("tight", !!FORMATS[fmt].tight);
+    document.querySelectorAll("#formats button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.fmt === fmt)));
+    if (!V) { el.textContent = "Pick a video to fill this in."; $("valStat").textContent = ""; return; }
+    el.textContent = "Working…";
+    requestAnimationFrame(() => {
+      if (!cache.has(fmt)) cache.set(fmt, FORMATS[fmt].of(V));
+      const v = cache.get(fmt);
+      el.textContent = v.length > MAX_SHOWN ? v.slice(0, MAX_SHOWN) + "…" : v;
+      const capped = (fmt === "hex" || fmt === "base64") && V.capped;
+      $("valStat").textContent = (v.length > MAX_SHOWN
+        ? `${v.length.toLocaleString()} characters — showing the first ${MAX_SHOWN.toLocaleString()}. Copy gives you all of it.`
+        : `${v.length.toLocaleString()} characters`)
+        + (capped ? " · read from the first 4 MB of the file." : "");
+    });
+  }
+  const bar = $("formats");
+  for (const [key, f] of Object.entries(FORMATS)) {
+    const b = document.createElement("button");
+    b.type = "button"; b.dataset.fmt = key; b.textContent = f.label;
+    b.setAttribute("aria-pressed", String(key === fmt));
+    b.addEventListener("click", () => { fmt = key; showValue(); });
+    bar.appendChild(b);
+  }
+  $("copyVal").addEventListener("click", async e => {
+    const btn = e.currentTarget, label = btn.textContent;
+    if (!V) return;
+    try { await navigator.clipboard.writeText(cache.get(fmt) ?? ""); btn.textContent = "Copied"; }
+    catch { btn.textContent = "Couldn't copy"; }
+    setTimeout(() => (btn.textContent = label), 1500);
+  });
+
+  // ---- loading ------------------------------------------------------------
+  $("file").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    $("err").hidden = true; $("strip").innerHTML = ""; $("stripNote").hidden = true;
+    $("status").textContent = "Reading frames…"; $("prog").hidden = false; $("prog").value = 0;
+    $("quickCode").textContent = "—"; V = null; cache.clear(); showValue();
+    try {
+      const head = new Uint8Array(await f.slice(0, BYTE_CAP).arrayBuffer());
+      const read = await readVideo(f, p => { $("prog").value = p; });
+      const shots = buildShots(read.frames);
+      // decode thumbnails once, for the ASCII view
+      await Promise.all(shots.map(s => new Promise(res => {
+        const im = new Image(); im.onload = () => { s.key.thumbImg = im; res(); }; im.onerror = res; im.src = s.key.thumb;
+      })));
+      V = { ...read, shots, name: f.name, size: f.size, type: f.type,
+            bytes: head, capped: f.size > BYTE_CAP, code: toCode(head) };
+      $("quickCode").textContent = V.code;
+      $("fileStat").textContent = `${(f.size / 1048576).toFixed(2)} MB`;
+      $("status").textContent = `${clock(V.duration)} · ${V.width}×${V.height} · ${V.frames.length} frames read · ${shots.length} shot${shots.length === 1 ? "" : "s"}`;
+      const strip = $("strip");
+      V.frames.forEach((fr, i) => {
+        const isCut = i > 0 && hamming(fr.hash.bits, V.frames[i - 1].hash.bits) >= 22;
+        const fig = document.createElement("figure");
+        fig.innerHTML = `<img src="${fr.thumb}" alt="Frame at ${clock(fr.t)}"${isCut ? ' class="cut"' : ""}><figcaption>${clock(fr.t)}</figcaption>`;
+        strip.appendChild(fig);
+      });
+      $("stripNote").hidden = false;
+      cache.clear(); showValue();
+      if (window.__sampleReady) $("describeCard").hidden = false;
+    } catch (ex) {
+      $("err").textContent = ex.message || "Couldn't read that video.";
+      $("err").hidden = false;
+      $("status").textContent = "Try an MP4 or WebM file.";
+    } finally {
+      $("prog").hidden = true;
+    }
+  });
+
+  // ---- optional: ask Claude about the frames -------------------------------
+  let ctl = null;
+  (async () => {
+    const sample = await (window.claude?.use?.("sample") ?? Promise.resolve(null));
+    if (!sample) return;
+    const limits = await sample.limits().catch(() => null);
+    if (!limits?.images) return;
+    window.__sampleReady = true;
+    if (V) $("describeCard").hidden = false;
+    $("describeBtn").addEventListener("click", async () => {
+      if (!V) return;
+      const btn = $("describeBtn"), stop = $("stopBtn"), out = $("desc"), err = $("descErr");
+      err.hidden = true; out.textContent = "Thinking…"; btn.disabled = true; stop.hidden = false;
+      ctl = new AbortController();
+      try {
+        const picks = V.shots.slice(0, limits.images.maxCount).map(s => s.key);
+        const blobs = await Promise.all(picks.map(k => fetch(k.thumb).then(r => r.blob())));
+        const times = picks.map(k => clock(k.t)).join(", ");
+        await sample(
+          `These are frames taken from one video, in order, at ${times}. `
+          + `Describe what happens across them as a short paragraph, then a line starting 'Keywords:' `
+          + `with 8-12 comma-separated search terms. Say only what you can see. No preamble.`,
+          { images: blobs, signal: ctl.signal, onText: ({ text }) => { out.textContent = text; } });
+      } catch (ex) {
+        out.textContent = ex.text ?? "";
+        const msg = { cancelled: "", not_granted: "You'd need to allow this page to use Claude. Reload and choose Allow.",
+          rate_limited: "Too many requests just now — give it a minute.",
+          image_rejected: "Claude couldn't read those frames.",
+          refused: "Claude declined this one." }[ex.code] ?? "That didn't go through. Try again in a moment.";
+        if (msg) { err.textContent = msg; err.hidden = false; }
+      } finally { btn.disabled = false; stop.hidden = true; ctl = null; }
+    });
+    $("stopBtn").addEventListener("click", () => ctl?.abort());
+  })();
+
+  showValue();
+})();
+</script>
