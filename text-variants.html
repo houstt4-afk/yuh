@@ -1,0 +1,341 @@
+<title>Say It Sideways</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f4f3f6; --surface: #ffffff; --sunken: #eceaf1;
+    --ink: #1b1824; --muted: #6a6478; --line: #ddd9e4;
+    --accent: #6b3fa0; --accent-soft: #ece4f7; --on-accent: #ffffff;
+    --misspell: #b4531f; --leet: #1d7a5e; --wrap: #8a3b7a;
+    --bad: #b3372b; --bad-soft: #fbe6e2;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
+      --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
+      --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
+      --bad: #f08a76; --bad-soft: #3a1a14;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
+    --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
+    --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
+    --bad: #f08a76; --bad-soft: #3a1a14;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); padding: 0 16px; }
+  .wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 48px; display: grid; gap: 18px; }
+
+  header { display: grid; gap: 6px; }
+  h1 { margin: 0; font: 700 clamp(30px, 7vw, 44px)/1.05 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 58ch; }
+
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type="text"] {
+    flex: 1 1 14em; min-width: 0; padding: 13px 14px;
+    background: var(--sunken); color: var(--ink); border: 1px solid var(--line); border-radius: 9px;
+    font: 17px/1.3 var(--body);
+  }
+  input[type="text"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    font: 500 14px/1 var(--body); padding: 12px 15px; border-radius: 9px; cursor: pointer;
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+  }
+  button:hover { color: var(--ink); border-color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .go { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 500; }
+  .chip { font-size: 13px; padding: 8px 11px; }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+  .opts { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+  .opts label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  input[type="range"] { accent-color: var(--accent); }
+
+  .group { display: grid; gap: 8px; }
+  .group h2 {
+    margin: 4px 0 0; font: 500 11px/1 var(--body); letter-spacing: .16em; text-transform: uppercase;
+  }
+  .group[data-kind="misspell"] h2 { color: var(--misspell); }
+  .group[data-kind="leet"] h2 { color: var(--leet); }
+  .group[data-kind="wrap"] h2 { color: var(--wrap); }
+
+  .item {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+    padding: 11px 13px; cursor: pointer; color: var(--ink); font: inherit;
+  }
+  .item:hover { border-color: var(--accent); }
+  .item .txt { flex: 1 1 auto; min-width: 0; font: 500 16px/1.4 var(--mono); overflow-wrap: anywhere; }
+  .item[data-kind="wrap"] .txt { font-size: 15px; }
+  .item .tag { flex: 0 0 auto; font: 500 11px/1 var(--body); color: var(--muted); letter-spacing: .04em; }
+  .item.copied { border-color: var(--accent); background: var(--accent-soft); }
+
+  .err { color: var(--bad); background: var(--bad-soft); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  [hidden] { display: none !important; }
+  .count { font-size: 13px; color: var(--muted); }
+
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+  summary { font: 600 15px/1.3 var(--display); cursor: pointer; }
+  details p, details li { color: var(--muted); max-width: 64ch; }
+  details ul { padding-left: 20px; margin: 8px 0 0; }
+  code { font-family: var(--mono); font-size: .92em; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Say It Sideways</h1>
+    <p>Type anything and get it back misspelled, in leetspeak, and wrapped in symbols. Tap any line to copy it.</p>
+  </header>
+
+  <div class="box">
+    <div class="row">
+      <input type="text" id="input" placeholder="type a word, phrase or sentence" autocomplete="off" spellcheck="false" value="good morning">
+      <button type="button" class="go" id="go">Generate</button>
+    </div>
+    <div class="opts">
+      <span>Include</span>
+      <button type="button" class="chip" data-kind="misspell" aria-pressed="true">Misspelled</button>
+      <button type="button" class="chip" data-kind="leet" aria-pressed="true">Leetspeak</button>
+      <button type="button" class="chip" data-kind="wrap" aria-pressed="true">Wrapped</button>
+    </div>
+    <div class="opts">
+      <label for="howmany">How many <input type="range" id="howmany" min="10" max="20" value="15"></label>
+      <span class="count" id="howmanyOut">15</span>
+      <button type="button" class="chip" id="copyAll">Copy all</button>
+    </div>
+    <div class="err" id="err" hidden></div>
+  </div>
+
+  <div id="out"></div>
+
+  <details>
+    <summary>How each kind works</summary>
+    <ul>
+      <li><strong>Misspelled</strong> — one or two small changes per word: a doubled letter, two letters swapped, a dropped vowel, a neighbouring key hit by mistake, or a sound spelled another way (<code>ph</code> for <code>f</code>, <code>k</code> for <code>c</code>). Still readable, just wrong.</li>
+      <li><strong>Leetspeak</strong> — letters replaced by lookalike digits. Light touches o and l only; heavy swaps everything it can and mixes the case.</li>
+      <li><strong>Wrapped</strong> — the words left alone, framed in symbols and separators.</li>
+    </ul>
+    <p>Everything is generated on your device, and Generate gives you a fresh set each time.</p>
+  </details>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const kinds = { misspell: true, leet: true, wrap: true };
+  const rnd = n => Math.floor(Math.random() * n);
+  const pick = a => a[rnd(a.length)];
+
+  // ---- misspellings -----------------------------------------------------
+  const NEIGHBOURS = {
+    a: "qwsz", b: "vghn", c: "xdfv", d: "serfcx", e: "wsdr", f: "drtgvc",
+    g: "ftyhbv", h: "gyujnb", i: "ujko", j: "huikmn", k: "jiolm", l: "kop",
+    m: "njk", n: "bhjm", o: "iklp", p: "ol", q: "wa", r: "edft", s: "awedxz",
+    t: "rfgy", u: "yhji", v: "cfgb", w: "qase", x: "zsdc", y: "tghu", z: "asx"
+  };
+  const SOUNDS = [[/ph/g, "f"], [/f/g, "ph"], [/c([aou])/g, "k$1"], [/ck/g, "k"],
+    [/s\b/g, "z"], [/er\b/g, "a"], [/ing\b/g, "in"], [/oo/g, "u"], [/ea/g, "ee"],
+    [/y\b/g, "ie"], [/th/g, "d"], [/qu/g, "kw"]];
+
+  function misspellWord(w) {
+    if (w.length < 2) return w;
+    const moves = [
+      () => {                                   // double a letter
+        const i = 1 + rnd(w.length - 1);
+        return w.slice(0, i) + w[i] + w.slice(i);
+      },
+      () => {                                   // swap two neighbours
+        const i = rnd(Math.max(1, w.length - 1));
+        return w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2);
+      },
+      () => {                                   // drop a letter
+        const i = 1 + rnd(w.length - 1);
+        return w.slice(0, i) + w.slice(i + 1);
+      },
+      () => {                                   // hit the next key over
+        const idx = [...w].map((c, i) => NEIGHBOURS[c.toLowerCase()] ? i : -1).filter(i => i >= 0);
+        if (!idx.length) return w;
+        const i = pick(idx), n = NEIGHBOURS[w[i].toLowerCase()];
+        const sub = n[rnd(n.length)];
+        return w.slice(0, i) + (w[i] === w[i].toUpperCase() ? sub.toUpperCase() : sub) + w.slice(i + 1);
+      },
+      () => {                                   // spell a sound another way
+        const usable = SOUNDS.filter(([re]) => re.test(w.toLowerCase()));
+        if (!usable.length) return w;
+        const [re, to] = pick(usable);
+        return w.toLowerCase().replace(re, to);
+      },
+      () => {                                   // stretch a vowel
+        const idx = [...w].map((c, i) => "aeiou".includes(c.toLowerCase()) ? i : -1).filter(i => i >= 0);
+        if (!idx.length) return w;
+        const i = pick(idx);
+        return w.slice(0, i) + w[i].repeat(2 + rnd(2)) + w.slice(i + 1);
+      }
+    ];
+    let out = w;
+    const n = 1 + (w.length > 5 ? rnd(2) : 0);
+    for (let k = 0; k < n; k++) {
+      const next = pick(moves)();
+      if (next && next !== out) out = next;
+    }
+    if (out !== w) return out;
+    for (let tries = 0; tries < 6; tries++) {          // bounded, never recursive
+      const next = pick(moves)();
+      if (next && next !== w) return next;
+    }
+    return w + w.slice(-1);                            // last resort: double the last letter
+  }
+  const misspell = s => s.replace(/[A-Za-z]+/g, misspellWord);
+
+  // ---- leetspeak ---------------------------------------------------------
+  const LIGHT = { o: "0", l: "1" };
+  const MED = { ...LIGHT, i: "1", e: "3", a: "4", s: "5" };
+  const HEAVY = { ...MED, t: "7", g: "9", b: "8", z: "2", c: "(" };
+  function leet(s, map, mixCase) {
+    return [...s].map(ch => {
+      const low = ch.toLowerCase(), sub = map[low];
+      if (sub) return sub;
+      return mixCase && /[a-z]/i.test(ch) ? (Math.random() < 0.5 ? low : low.toUpperCase()) : ch;
+    }).join("");
+  }
+
+  // ---- wrapping ----------------------------------------------------------
+  const WRAPS = [
+    t => `✧･ﾟ ${t} ･ﾟ✧`,
+    t => `.·:*¨¨*:·. ${t} .·:*¨¨*:·.`,
+    t => `──❥ ${t} ❥──`,
+    t => `»»—— ${t} ——««`,
+    t => `⋆｡°✩ ${t} ✩°｡⋆`,
+    t => `★彡 ${t} 彡★`,
+    t => `✦ ${t.toUpperCase()} ✦`,
+    t => `≪ ${t} ≫`,
+    t => `︵‿︵ ${t} ︵‿︵`,
+    t => `⊹ ${[...t].join(" ")} ⊹`,
+    t => `┈┈ ${t} ┈┈`,
+    t => `◜ ${t} ◞`,
+    t => {
+      const line = "─".repeat(t.length + 4);
+      return `╭${line}╮\n│  ${t}  │\n╰${line}╯`;
+    },
+    t => {
+      const line = "━".repeat(t.length + 4);
+      return `┏${line}┓\n┃  ${t}  ┃\n┗${line}┛`;
+    }
+  ];
+
+  // ---- building the list ---------------------------------------------------
+  function build(text, want) {
+    const on = Object.keys(kinds).filter(k => kinds[k]);
+    if (!on.length) return [];
+    const out = [], seen = new Set([text]);
+    const add = (kind, label, value) => {
+      if (!value || seen.has(value)) return false;
+      seen.add(value); out.push({ kind, label, value }); return true;
+    };
+
+    const per = Math.ceil(want / on.length);
+    if (kinds.misspell) {
+      for (let i = 0, guard = 0; i < per && guard < per * 12; guard++) {
+        if (add("misspell", "typo", misspell(text))) i++;
+      }
+    }
+    if (kinds.leet) {
+      const recipes = [
+        ["light", () => leet(text, LIGHT, false)],
+        ["medium", () => leet(text, MED, false)],
+        ["heavy", () => leet(text, HEAVY, false)],
+        ["mIxEd", () => leet(text, MED, true)],
+        ["heavy mixed", () => leet(text, HEAVY, true)],
+        ["light mixed", () => leet(text, LIGHT, true)]
+      ];
+      for (let i = 0, k = 0; i < per && k < recipes.length * 3; k++) {
+        const [label, fn] = recipes[k % recipes.length];
+        if (add("leet", label, fn())) i++;
+      }
+    }
+    if (kinds.wrap) {
+      const order = [...WRAPS.keys()].sort(() => Math.random() - 0.5);
+      for (let i = 0, k = 0; i < per && k < order.length; k++) {
+        if (add("wrap", "frame", WRAPS[order[k]](text))) i++;
+      }
+    }
+    return out.slice(0, want);
+  }
+
+  function render(items) {
+    const host = $("out");
+    host.innerHTML = "";
+    const titles = { misspell: "Misspelled", leet: "Leetspeak", wrap: "Wrapped" };
+    for (const kind of ["misspell", "leet", "wrap"]) {
+      const mine = items.filter(i => i.kind === kind);
+      if (!mine.length) continue;
+      const g = document.createElement("section");
+      g.className = "group"; g.dataset.kind = kind;
+      g.innerHTML = `<h2>${titles[kind]} · ${mine.length}</h2>`;
+      for (const it of mine) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "item"; b.dataset.kind = kind;
+        b.setAttribute("aria-label", `Copy ${it.value}`);
+        const txt = document.createElement("span");
+        txt.className = "txt"; txt.textContent = it.value;
+        const tag = document.createElement("span");
+        tag.className = "tag"; tag.textContent = it.label;
+        b.append(txt, tag);
+        b.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(it.value); tag.textContent = "copied"; }
+          catch {
+            const r = document.createRange(); r.selectNodeContents(txt);
+            const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+            tag.textContent = "selected";
+          }
+          b.classList.add("copied");
+          setTimeout(() => { b.classList.remove("copied"); tag.textContent = it.label; }, 1400);
+        });
+        g.appendChild(b);
+      }
+      host.appendChild(g);
+    }
+  }
+
+  let current = [];
+  function generate() {
+    const text = $("input").value.trim();
+    const err = $("err");
+    if (!text) { err.textContent = "Type something first."; err.hidden = false; $("out").innerHTML = ""; return; }
+    if (!Object.values(kinds).some(Boolean)) {
+      err.textContent = "Turn at least one kind back on."; err.hidden = false; $("out").innerHTML = ""; return;
+    }
+    err.hidden = true;
+    current = build(text, +$("howmany").value);
+    render(current);
+  }
+
+  $("go").addEventListener("click", generate);
+  $("input").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); generate(); } });
+  $("howmany").addEventListener("input", () => { $("howmanyOut").textContent = $("howmany").value; generate(); });
+  document.querySelectorAll(".chip[data-kind]").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.kind;
+    kinds[k] = !kinds[k];
+    b.setAttribute("aria-pressed", String(kinds[k]));
+    generate();
+  }));
+  $("copyAll").addEventListener("click", async e => {
+    if (!current.length) return;
+    const btn = e.currentTarget, label = btn.textContent;
+    try { await navigator.clipboard.writeText(current.map(i => i.value).join("\n")); btn.textContent = "Copied"; }
+    catch { btn.textContent = "Couldn't copy"; }
+    setTimeout(() => (btn.textContent = label), 1500);
+  });
+
+  generate();
+})();
+</script>
