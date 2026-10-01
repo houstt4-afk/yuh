@@ -139,7 +139,7 @@
       <li><strong>Leetspeak</strong> — letters replaced by lookalike digits. Light touches o and l only; heavy swaps everything it can and mixes the case.</li>
       <li><strong>Wrapped</strong> — the words left alone, framed in symbols and separators.</li>
       <li><strong>Emoji</strong> — an emoji after each word it knows, or in place of it, or sparkles threaded between the words.</li>
-      <li><strong>Other languages</strong> — common words swapped into Spanish, French, Italian, German or Japanese from a built-in list, so it's a mix rather than a real translation. When a word isn't in the list you get the <em>-ish</em> version instead: the English bent into that language's shape, which is a joke accent and not real words.</li>
+      <li><strong>Other languages</strong> — a word or two swapped into Spanish, French, Italian, German or Japanese while the rest stays English, so it always reads as a mix. It never translates the whole thing. Words come from a small built-in list; when none of yours are in it you get the <em>-ish</em> version instead, which bends one or two of your words into that language's shape — a joke accent, not real words.</li>
       <li><strong>Numbers</strong> — digits standing in for letters, but only in one place at a time: first letters, last letters, vowels, middles, every other one, or the lot.</li>
       <li><strong>Reversed &amp; clipped</strong> — backwards, each word backwards, word order flipped, half a word, vowels dropped, or every other letter.</li>
       <li><strong>Initials</strong> — the first letters, plain, dotted, spaced or slashed; the first two letters run together; and numeronyms, where the middle of a word becomes the count of letters it stands for, the way internationalization is written i18n.</li>
@@ -365,23 +365,42 @@
   };
   function styleLang(text, lang) {
     const f = STYLERS[lang];
-    return text.replace(/[A-Za-z]+/g, w => {
-      const out = f(w);
-      return /^[A-Z]/.test(w) && lang !== "German" ? out[0].toUpperCase() + out.slice(1) : out;
-    });
+    const parts = text.split(/([A-Za-z]+)/);
+    const idx = [];
+    for (let i = 1; i < parts.length; i += 2) if (parts[i].length > 2) idx.push(i);
+    if (!idx.length) return null;
+    const wordCount = Math.floor(parts.length / 2);
+    const howMany = wordCount > 1 ? 1 + rnd(Math.min(2, wordCount - 1)) : 1;
+    for (const i of [...idx].sort(() => Math.random() - 0.5).slice(0, howMany)) {
+      const w = parts[i], out = f(w);
+      parts[i] = /^[A-Z]/.test(w) && lang !== "German" ? out[0].toUpperCase() + out.slice(1) : out;
+    }
+    return parts.join("");
   }
 
-  function mixLang(text, lang, all) {
+  // Swap SOME words into the other language and leave the rest in English.
+  // Always at least one of each, so it reads as a mix rather than a translation.
+  function mixLang(text, lang, seed) {
     const dict = LANGS[lang];
+    const parts = text.split(/([A-Za-z]+)/);          // odd indexes are the words
     const hits = [];
-    const out = text.replace(/[A-Za-z]+/g, w => {
-      const sub = dict[w.toLowerCase()];
-      if (!sub) return w;
-      hits.push(w);
-      if (!all && Math.random() < 0.45) return w;      // mix: swap only some words
-      return /^[A-Z]/.test(w) ? sub[0].toUpperCase() + sub.slice(1) : sub;
-    });
-    return hits.length ? out : null;
+    for (let i = 1; i < parts.length; i += 2) if (dict[parts[i].toLowerCase()]) hits.push(i);
+    if (!hits.length) return null;
+    const wordCount = Math.floor(parts.length / 2);
+
+    // how many to swap: at least one, and never every word when there is more than one
+    const most = wordCount > 1 ? Math.min(hits.length, wordCount - 1) : 1;
+    const howMany = 1 + (seed % Math.max(1, most));
+    const order = [...hits].sort(() => Math.random() - 0.5).slice(0, howMany);
+    const take = new Set(order);
+
+    let swapped = 0;
+    for (const i of take) {
+      const w = parts[i], sub = dict[w.toLowerCase()];
+      parts[i] = /^[A-Z]/.test(w) ? sub[0].toUpperCase() + sub.slice(1) : sub;
+      swapped++;
+    }
+    return swapped ? parts.join("") : null;
   }
 
   // ---- digits in different places -----------------------------------------
@@ -494,17 +513,17 @@
     if (kinds.lingo) {
       const names = Object.keys(LANGS).sort(() => Math.random() - 0.5);
       let i = 0;
-      for (const lang of names) {
-        if (i >= per) break;
-        if (add("lingo", lang, mixLang(text, lang, false))) i++;
+      for (let round = 0; round < 3 && i < per; round++) {
+        for (const lang of names) {
+          if (i >= per) break;
+          if (add("lingo", `${lang} mix`, mixLang(text, lang, round))) i++;
+        }
       }
-      for (const lang of names) {
-        if (i >= per) break;
-        if (add("lingo", `${lang}, all of it`, mixLang(text, lang, true))) i++;
-      }
-      for (const lang of names) {                 // never leave the group empty
-        if (i >= per) break;
-        if (add("lingo", `${lang}-ish`, styleLang(text, lang))) i++;
+      for (let round = 0; round < 2 && i < per; round++) {   // never leave the group empty
+        for (const lang of names) {
+          if (i >= per) break;
+          if (add("lingo", `${lang}-ish`, styleLang(text, lang))) i++;
+        }
       }
     }
     if (kinds.numbers) fromStyles("numbers", NUMBER_STYLES);
