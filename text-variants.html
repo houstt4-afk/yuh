@@ -8,7 +8,7 @@
     --ink: #1b1824; --muted: #6a6478; --line: #ddd9e4;
     --accent: #6b3fa0; --accent-soft: #ece4f7; --on-accent: #ffffff;
     --misspell: #b4531f; --leet: #1d7a5e; --wrap: #8a3b7a;
-    --emoji: #a6771a; --lingo: #2d5fa8; --numbers: #1f7c86; --partial: #8d4a2f;
+    --emoji: #a6771a; --lingo: #2d5fa8; --numbers: #1f7c86; --partial: #8d4a2f; --initials: #5a4a9c;
     --bad: #b3372b; --bad-soft: #fbe6e2;
     --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
     --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
@@ -20,7 +20,7 @@
       --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
       --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
       --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
-      --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383;
+      --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383; --initials: #a79af0;
       --bad: #f08a76; --bad-soft: #3a1a14;
     }
   }
@@ -29,7 +29,7 @@
     --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
     --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
     --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
-    --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383;
+    --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383; --initials: #a79af0;
     --bad: #f08a76; --bad-soft: #3a1a14;
   }
 
@@ -74,6 +74,7 @@
   .group[data-kind="lingo"] h2 { color: var(--lingo); }
   .group[data-kind="numbers"] h2 { color: var(--numbers); }
   .group[data-kind="partial"] h2 { color: var(--partial); }
+  .group[data-kind="initials"] h2 { color: var(--initials); }
 
   .item {
     display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
@@ -102,7 +103,7 @@
 <div class="wrap">
   <header>
     <h1>Say It Sideways</h1>
-    <p>Type anything and get it back seven ways — misspelled, leetspeak, wrapped, emoji, other languages, numbers, reversed. Tap any line to copy it.</p>
+    <p>Type anything and get it back eight ways — misspelled, leetspeak, wrapped, emoji, other languages, numbers, reversed, initials. Tap any line to copy it.</p>
   </header>
 
   <div class="box">
@@ -119,10 +120,11 @@
       <button type="button" class="chip" data-kind="lingo" aria-pressed="true">Languages</button>
       <button type="button" class="chip" data-kind="numbers" aria-pressed="true">Numbers</button>
       <button type="button" class="chip" data-kind="partial" aria-pressed="true">Reversed</button>
+      <button type="button" class="chip" data-kind="initials" aria-pressed="true">Initials</button>
     </div>
     <div class="opts">
-      <label for="howmany">How many <input type="range" id="howmany" min="10" max="28" value="21"></label>
-      <span class="count" id="howmanyOut">21</span>
+      <label for="howmany">How many <input type="range" id="howmany" min="10" max="32" value="24"></label>
+      <span class="count" id="howmanyOut">24</span>
       <button type="button" class="chip" id="copyAll">Copy all</button>
     </div>
     <div class="err" id="err" hidden></div>
@@ -139,7 +141,8 @@
       <li><strong>Emoji</strong> — an emoji after each word it knows, or in place of it, or sparkles threaded between the words.</li>
       <li><strong>Other languages</strong> — common words swapped into Spanish, French, Italian, German or Japanese from a built-in list, so it's a mix rather than a real translation. When a word isn't in the list you get the <em>-ish</em> version instead: the English bent into that language's shape, which is a joke accent and not real words.</li>
       <li><strong>Numbers</strong> — digits standing in for letters, but only in one place at a time: first letters, last letters, vowels, middles, every other one, or the lot.</li>
-      <li><strong>Reversed &amp; clipped</strong> — backwards, each word backwards, word order flipped, half a word, vowels dropped, every other letter, or just the initials.</li>
+      <li><strong>Reversed &amp; clipped</strong> — backwards, each word backwards, word order flipped, half a word, vowels dropped, or every other letter.</li>
+      <li><strong>Initials</strong> — the first letters, plain, dotted, spaced or slashed; the first two letters run together; and numeronyms, where the middle of a word becomes the count of letters it stands for, the way internationalization is written i18n.</li>
     </ul>
     <p>Everything is generated on your device, and Generate gives you a fresh set each time.</p>
   </details>
@@ -148,7 +151,7 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const kinds = { misspell: true, leet: true, wrap: true, emoji: true, lingo: true, numbers: true, partial: true };
+  const kinds = { misspell: true, leet: true, wrap: true, emoji: true, lingo: true, numbers: true, partial: true, initials: true };
   const rnd = n => Math.floor(Math.random() * n);
   const pick = a => a[rnd(a.length)];
 
@@ -423,8 +426,23 @@
     ["last half", t => t.replace(/[A-Za-z]+/g, w => w.slice(-Math.max(1, Math.floor(w.length / 2))))],
     ["no vowels", t => t.replace(/[A-Za-z]+/g, w => w[0] + w.slice(1).replace(/[aeiou]/gi, "") || w)],
     ["every other letter", t => t.replace(/[A-Za-z]+/g, w => [...w].filter((_, i) => i % 2 === 0).join(""))],
-    ["initials", t => (t.match(/[A-Za-z]+/g) ?? []).map(w => w[0].toUpperCase()).join("")],
     ["clipped", t => t.replace(/[A-Za-z]+/g, w => w.length > 3 ? w.slice(0, 3) + "…" : w)]
+  ];
+
+  // ---- initials and short forms --------------------------------------------
+  const words = t => t.match(/[A-Za-z]+/g) ?? [];
+  const INITIAL_STYLES = [
+    ["caps", t => words(t).map(w => w[0].toUpperCase()).join("")],
+    ["dotted", t => words(t).map(w => w[0].toUpperCase() + ".").join("")],
+    ["spaced", t => words(t).map(w => w[0].toUpperCase()).join(" ")],
+    ["lower case", t => words(t).map(w => w[0].toLowerCase()).join("")],
+    ["slashed", t => words(t).map(w => w[0].toUpperCase()).join("/")],
+    ["first two letters", t => words(t).map(w => w.slice(0, 2)).map(x => x[0].toUpperCase() + x.slice(1)).join("")],
+    ["numeronym", t => words(t).map(w => w.length > 2 ? `${w[0]}${w.length - 2}${w[w.length - 1]}` : w).join(" ")],
+    ["letter counts", t => words(t).map(w => `${w[0].toUpperCase()}${w.length}`).join(" ")],
+    ["top and tail", t => { const ws = words(t);
+      return ws.length > 1 ? `${ws[0][0].toUpperCase()}…${ws[ws.length - 1][0].toUpperCase()}` : null; }],
+    ["with stops", t => words(t).map(w => w[0].toUpperCase()).join(" · ")]
   ];
 
   // ---- building the list ---------------------------------------------------
@@ -491,6 +509,7 @@
     }
     if (kinds.numbers) fromStyles("numbers", NUMBER_STYLES);
     if (kinds.partial) fromStyles("partial", PARTIAL_STYLES);
+    if (kinds.initials) fromStyles("initials", INITIAL_STYLES);
     return out.slice(0, want);
   }
 
@@ -498,8 +517,9 @@
     const host = $("out");
     host.innerHTML = "";
     const titles = { misspell: "Misspelled", leet: "Leetspeak", wrap: "Wrapped",
-      emoji: "Emoji", lingo: "Other languages", numbers: "Numbers", partial: "Reversed & clipped" };
-    for (const kind of ["misspell", "leet", "wrap", "emoji", "lingo", "numbers", "partial"]) {
+      emoji: "Emoji", lingo: "Other languages", numbers: "Numbers", partial: "Reversed & clipped",
+      initials: "Initials" };
+    for (const kind of ["misspell", "leet", "wrap", "emoji", "lingo", "numbers", "partial", "initials"]) {
       const mine = items.filter(i => i.kind === kind);
       if (!mine.length) continue;
       const g = document.createElement("section");
