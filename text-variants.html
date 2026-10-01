@@ -8,6 +8,7 @@
     --ink: #1b1824; --muted: #6a6478; --line: #ddd9e4;
     --accent: #6b3fa0; --accent-soft: #ece4f7; --on-accent: #ffffff;
     --misspell: #b4531f; --leet: #1d7a5e; --wrap: #8a3b7a;
+    --emoji: #a6771a; --lingo: #2d5fa8; --numbers: #1f7c86; --partial: #8d4a2f;
     --bad: #b3372b; --bad-soft: #fbe6e2;
     --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
     --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
@@ -19,6 +20,7 @@
       --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
       --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
       --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
+      --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383;
       --bad: #f08a76; --bad-soft: #3a1a14;
     }
   }
@@ -27,6 +29,7 @@
     --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
     --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
     --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
+    --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383;
     --bad: #f08a76; --bad-soft: #3a1a14;
   }
 
@@ -67,6 +70,10 @@
   .group[data-kind="misspell"] h2 { color: var(--misspell); }
   .group[data-kind="leet"] h2 { color: var(--leet); }
   .group[data-kind="wrap"] h2 { color: var(--wrap); }
+  .group[data-kind="emoji"] h2 { color: var(--emoji); }
+  .group[data-kind="lingo"] h2 { color: var(--lingo); }
+  .group[data-kind="numbers"] h2 { color: var(--numbers); }
+  .group[data-kind="partial"] h2 { color: var(--partial); }
 
   .item {
     display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
@@ -76,6 +83,8 @@
   .item:hover { border-color: var(--accent); }
   .item .txt { flex: 1 1 auto; min-width: 0; font: 500 16px/1.4 var(--mono); overflow-wrap: anywhere; }
   .item[data-kind="wrap"] .txt { font-size: 15px; }
+  .item[data-kind="emoji"] .txt { font-family: var(--body); font-size: 16px; }
+  .item[data-kind="lingo"] .txt { font-family: var(--body); }
   .item .tag { flex: 0 0 auto; font: 500 11px/1 var(--body); color: var(--muted); letter-spacing: .04em; }
   .item.copied { border-color: var(--accent); background: var(--accent-soft); }
 
@@ -93,7 +102,7 @@
 <div class="wrap">
   <header>
     <h1>Say It Sideways</h1>
-    <p>Type anything and get it back misspelled, in leetspeak, and wrapped in symbols. Tap any line to copy it.</p>
+    <p>Type anything and get it back seven ways — misspelled, leetspeak, wrapped, emoji, other languages, numbers, reversed. Tap any line to copy it.</p>
   </header>
 
   <div class="box">
@@ -106,10 +115,14 @@
       <button type="button" class="chip" data-kind="misspell" aria-pressed="true">Misspelled</button>
       <button type="button" class="chip" data-kind="leet" aria-pressed="true">Leetspeak</button>
       <button type="button" class="chip" data-kind="wrap" aria-pressed="true">Wrapped</button>
+      <button type="button" class="chip" data-kind="emoji" aria-pressed="true">Emoji</button>
+      <button type="button" class="chip" data-kind="lingo" aria-pressed="true">Languages</button>
+      <button type="button" class="chip" data-kind="numbers" aria-pressed="true">Numbers</button>
+      <button type="button" class="chip" data-kind="partial" aria-pressed="true">Reversed</button>
     </div>
     <div class="opts">
-      <label for="howmany">How many <input type="range" id="howmany" min="10" max="20" value="15"></label>
-      <span class="count" id="howmanyOut">15</span>
+      <label for="howmany">How many <input type="range" id="howmany" min="10" max="28" value="21"></label>
+      <span class="count" id="howmanyOut">21</span>
       <button type="button" class="chip" id="copyAll">Copy all</button>
     </div>
     <div class="err" id="err" hidden></div>
@@ -123,6 +136,10 @@
       <li><strong>Misspelled</strong> — one or two small changes per word: a doubled letter, two letters swapped, a dropped vowel, a neighbouring key hit by mistake, or a sound spelled another way (<code>ph</code> for <code>f</code>, <code>k</code> for <code>c</code>). Still readable, just wrong.</li>
       <li><strong>Leetspeak</strong> — letters replaced by lookalike digits. Light touches o and l only; heavy swaps everything it can and mixes the case.</li>
       <li><strong>Wrapped</strong> — the words left alone, framed in symbols and separators.</li>
+      <li><strong>Emoji</strong> — an emoji after each word it knows, or in place of it, or sparkles threaded between the words.</li>
+      <li><strong>Other languages</strong> — common words swapped into Spanish, French, Italian, German or Japanese. Only words it has in its small built-in list change; everything else stays put, so this is a mix rather than a translation.</li>
+      <li><strong>Numbers</strong> — digits standing in for letters, but only in one place at a time: first letters, last letters, vowels, middles, every other one, or the lot.</li>
+      <li><strong>Reversed &amp; clipped</strong> — backwards, each word backwards, word order flipped, half a word, vowels dropped, every other letter, or just the initials.</li>
     </ul>
     <p>Everything is generated on your device, and Generate gives you a fresh set each time.</p>
   </details>
@@ -131,7 +148,7 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const kinds = { misspell: true, leet: true, wrap: true };
+  const kinds = { misspell: true, leet: true, wrap: true, emoji: true, lingo: true, numbers: true, partial: true };
   const rnd = n => Math.floor(Math.random() * n);
   const pick = a => a[rnd(a.length)];
 
@@ -232,6 +249,117 @@
     }
   ];
 
+  // ---- emoji + words -----------------------------------------------------
+  const EMOJI = {
+    good: "👍", great: "🙌", best: "🏆", bad: "👎", morning: "🌅", night: "🌙",
+    evening: "🌆", day: "☀️", sun: "☀️", moon: "🌙", star: "⭐", sky: "🌤️",
+    love: "❤️", heart: "❤️", hate: "💢", happy: "😄", sad: "😢", tired: "😴",
+    sleep: "😴", food: "🍽️", eat: "🍴", coffee: "☕", tea: "🍵", water: "💧",
+    fire: "🔥", hot: "🔥", cold: "🥶", ice: "🧊", money: "💰", work: "💼",
+    school: "🏫", study: "📚", book: "📖", test: "📝", exam: "📝", time: "⏰",
+    fast: "⚡", slow: "🐌", home: "🏠", car: "🚗", phone: "📱", music: "🎵",
+    party: "🎉", birthday: "🎂", dog: "🐶", cat: "🐱", rain: "🌧️", snow: "❄️",
+    green: "🟢", blue: "🔵", red: "🔴", yes: "✅", no: "❌", go: "🏃", stop: "🛑",
+    big: "🔝", new: "🆕", heart_eyes: "😍", friend: "🤝", hello: "👋", hi: "👋",
+    bye: "👋", thanks: "🙏", please: "🙏", sorry: "😅", help: "🆘", win: "🏆",
+    beach: "🏖️", tree: "🌳", flower: "🌸", plant: "🌱", gym: "🏋️", run: "🏃",
+    sick: "🤒", doctor: "🩺", heart_med: "🫀", brain: "🧠", blood: "🩸"
+  };
+  const SPARKLE = ["✨", "💫", "⭐", "🔥", "💯", "🌟", "⚡", "🎯"];
+  function emojiFor(w) { return EMOJI[w.toLowerCase().replace(/[^a-z]/g, "")]; }
+
+  const EMOJI_STYLES = [
+    ["after each", t => t.replace(/[A-Za-z]+/g, w => { const e = emojiFor(w); return e ? `${w} ${e}` : w; })],
+    ["instead of", t => t.replace(/[A-Za-z]+/g, w => emojiFor(w) || w)],
+    ["bookended", t => { const e = pick(SPARKLE); return `${e} ${t} ${e}`; }],
+    ["between words", t => t.split(/\s+/).join(` ${pick(SPARKLE)} `)],
+    ["loud", t => { const hits = t.match(/[A-Za-z]+/g)?.map(emojiFor).filter(Boolean) ?? []; 
+      return `${t.toUpperCase()} ${(hits.length ? hits : [pick(SPARKLE)]).join("")}${pick(SPARKLE)}`; }],
+    ["trailing", t => `${t} ${pick(SPARKLE)}${pick(SPARKLE)}${pick(SPARKLE)}`]
+  ];
+
+  // ---- a word or two in another language ----------------------------------
+  const LANGS = {
+    Spanish: { good: "bueno", morning: "mañana", night: "noche", day: "día", the: "el",
+      my: "mi", and: "y", is: "es", love: "amor", friend: "amigo", water: "agua",
+      food: "comida", coffee: "café", house: "casa", hello: "hola", yes: "sí", no: "no",
+      thanks: "gracias", time: "tiempo", life: "vida", sun: "sol", moon: "luna", fire: "fuego" },
+    French: { good: "bon", morning: "matin", night: "nuit", day: "jour", the: "le",
+      my: "mon", and: "et", is: "est", love: "amour", friend: "ami", water: "eau",
+      food: "nourriture", coffee: "café", house: "maison", hello: "bonjour", yes: "oui",
+      no: "non", thanks: "merci", time: "temps", life: "vie", sun: "soleil", moon: "lune", fire: "feu" },
+    Italian: { good: "buono", morning: "mattina", night: "notte", day: "giorno", the: "il",
+      my: "mio", and: "e", is: "è", love: "amore", friend: "amico", water: "acqua",
+      food: "cibo", coffee: "caffè", house: "casa", hello: "ciao", yes: "sì", no: "no",
+      thanks: "grazie", time: "tempo", life: "vita", sun: "sole", moon: "luna", fire: "fuoco" },
+    German: { good: "gut", morning: "Morgen", night: "Nacht", day: "Tag", the: "der",
+      my: "mein", and: "und", is: "ist", love: "Liebe", friend: "Freund", water: "Wasser",
+      food: "Essen", coffee: "Kaffee", house: "Haus", hello: "hallo", yes: "ja", no: "nein",
+      thanks: "danke", time: "Zeit", life: "Leben", sun: "Sonne", moon: "Mond", fire: "Feuer" },
+    Japanese: { good: "ii", morning: "asa", night: "yoru", day: "hi", my: "watashi no",
+      and: "to", love: "ai", friend: "tomodachi", water: "mizu", food: "tabemono",
+      coffee: "kōhī", house: "ie", hello: "konnichiwa", yes: "hai", no: "iie",
+      thanks: "arigatō", time: "jikan", life: "inochi", sun: "taiyō", moon: "tsuki", fire: "hi" }
+  };
+  function mixLang(text, lang, all) {
+    const dict = LANGS[lang];
+    const hits = [];
+    const out = text.replace(/[A-Za-z]+/g, w => {
+      const sub = dict[w.toLowerCase()];
+      if (!sub) return w;
+      hits.push(w);
+      if (!all && Math.random() < 0.45) return w;      // mix: swap only some words
+      return /^[A-Z]/.test(w) ? sub[0].toUpperCase() + sub.slice(1) : sub;
+    });
+    return hits.length ? out : null;
+  }
+
+  // ---- digits in different places -----------------------------------------
+  const DIGIT = { o: "0", i: "1", l: "1", e: "3", a: "4", s: "5", t: "7", b: "8", g: "9", z: "2" };
+  function swapAt(text, choose) {
+    const idx = [];
+    for (let i = 0; i < text.length; i++) if (DIGIT[text[i].toLowerCase()]) idx.push(i);
+    if (!idx.length) return null;
+    const take = new Set(choose(idx));
+    if (!take.size) return null;
+    return [...text].map((c, i) => take.has(i) ? DIGIT[c.toLowerCase()] : c).join("");
+  }
+  const NUMBER_STYLES = [
+    ["first letter only", t => swapAt(t, idx => {
+      const firsts = new Set();
+      t.replace(/[A-Za-z]+/g, (w, at) => { firsts.add(at); return w; });
+      return idx.filter(i => firsts.has(i));
+    })],
+    ["last letter only", t => swapAt(t, idx => {
+      const lasts = new Set();
+      t.replace(/[A-Za-z]+/g, (w, at) => { lasts.add(at + w.length - 1); return w; });
+      return idx.filter(i => lasts.has(i));
+    })],
+    ["vowels only", t => swapAt(t, idx => idx.filter(i => "aeiou".includes(t[i].toLowerCase())))],
+    ["middles only", t => swapAt(t, idx => {
+      const edges = new Set();
+      t.replace(/[A-Za-z]+/g, (w, at) => { edges.add(at); edges.add(at + w.length - 1); return w; });
+      return idx.filter(i => !edges.has(i));
+    })],
+    ["one at random", t => swapAt(t, idx => [pick(idx)])],
+    ["every other one", t => swapAt(t, idx => idx.filter((_, k) => k % 2 === 0))],
+    ["all of them", t => swapAt(t, idx => idx)]
+  ];
+
+  // ---- reversed and clipped -------------------------------------------------
+  const rev = w => [...w].reverse().join("");
+  const PARTIAL_STYLES = [
+    ["backwards", t => rev(t)],
+    ["each word backwards", t => t.replace(/[A-Za-z]+/g, rev)],
+    ["words in reverse order", t => t.split(/\s+/).reverse().join(" ")],
+    ["first half", t => t.replace(/[A-Za-z]+/g, w => w.slice(0, Math.max(1, Math.ceil(w.length / 2))))],
+    ["last half", t => t.replace(/[A-Za-z]+/g, w => w.slice(-Math.max(1, Math.floor(w.length / 2))))],
+    ["no vowels", t => t.replace(/[A-Za-z]+/g, w => w[0] + w.slice(1).replace(/[aeiou]/gi, "") || w)],
+    ["every other letter", t => t.replace(/[A-Za-z]+/g, w => [...w].filter((_, i) => i % 2 === 0).join(""))],
+    ["initials", t => (t.match(/[A-Za-z]+/g) ?? []).map(w => w[0].toUpperCase()).join("")],
+    ["clipped", t => t.replace(/[A-Za-z]+/g, w => w.length > 3 ? w.slice(0, 3) + "…" : w)]
+  ];
+
   // ---- building the list ---------------------------------------------------
   function build(text, want) {
     const on = Object.keys(kinds).filter(k => kinds[k]);
@@ -268,14 +396,39 @@
         if (add("wrap", "frame", WRAPS[order[k]](text))) i++;
       }
     }
+    const fromStyles = (kind, styles, rounds = 1) => {
+      const order = [...styles].sort(() => Math.random() - 0.5);
+      for (let i = 0, k = 0; i < per && k < order.length * rounds; k++) {
+        const [label, fn] = order[k % order.length];
+        let v = null;
+        try { v = fn(text); } catch { v = null; }
+        if (v && v !== text && add(kind, label, v)) i++;
+      }
+    };
+    if (kinds.emoji) fromStyles("emoji", EMOJI_STYLES, 2);
+    if (kinds.lingo) {
+      const names = Object.keys(LANGS).sort(() => Math.random() - 0.5);
+      let i = 0;
+      for (const lang of names) {
+        if (i >= per) break;
+        if (add("lingo", lang, mixLang(text, lang, false))) i++;
+      }
+      for (const lang of names) {
+        if (i >= per) break;
+        if (add("lingo", `${lang}, all of it`, mixLang(text, lang, true))) i++;
+      }
+    }
+    if (kinds.numbers) fromStyles("numbers", NUMBER_STYLES);
+    if (kinds.partial) fromStyles("partial", PARTIAL_STYLES);
     return out.slice(0, want);
   }
 
   function render(items) {
     const host = $("out");
     host.innerHTML = "";
-    const titles = { misspell: "Misspelled", leet: "Leetspeak", wrap: "Wrapped" };
-    for (const kind of ["misspell", "leet", "wrap"]) {
+    const titles = { misspell: "Misspelled", leet: "Leetspeak", wrap: "Wrapped",
+      emoji: "Emoji", lingo: "Other languages", numbers: "Numbers", partial: "Reversed & clipped" };
+    for (const kind of ["misspell", "leet", "wrap", "emoji", "lingo", "numbers", "partial"]) {
       const mine = items.filter(i => i.kind === kind);
       if (!mine.length) continue;
       const g = document.createElement("section");
