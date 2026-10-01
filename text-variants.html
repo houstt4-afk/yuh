@@ -8,7 +8,7 @@
     --ink: #1b1824; --muted: #6a6478; --line: #ddd9e4;
     --accent: #6b3fa0; --accent-soft: #ece4f7; --on-accent: #ffffff;
     --misspell: #b4531f; --leet: #1d7a5e; --wrap: #8a3b7a;
-    --emoji: #a6771a; --lingo: #2d5fa8; --numbers: #1f7c86; --partial: #8d4a2f; --initials: #5a4a9c;
+    --emoji: #a6771a; --lingo: #2d5fa8; --numbers: #1f7c86; --partial: #8d4a2f; --initials: #5a4a9c; --tags: #1f7a4a; --spaced: #96511f;
     --bad: #b3372b; --bad-soft: #fbe6e2;
     --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
     --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
@@ -20,7 +20,7 @@
       --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
       --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
       --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
-      --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383; --initials: #a79af0;
+      --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383; --initials: #a79af0; --tags: #6fd09a; --spaced: #e6a97e;
       --bad: #f08a76; --bad-soft: #3a1a14;
     }
   }
@@ -29,7 +29,7 @@
     --bg: #141220; --surface: #1d1a2b; --sunken: #171426; --ink: #eae6f2; --muted: #a39cb5;
     --line: #322c45; --accent: #b79aea; --accent-soft: #2b2242; --on-accent: #141220;
     --misspell: #e8a06a; --leet: #5fcba4; --wrap: #e59ad4;
-    --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383; --initials: #a79af0;
+    --emoji: #e0bc62; --lingo: #8ab4f0; --numbers: #68c8d4; --partial: #e3a383; --initials: #a79af0; --tags: #6fd09a; --spaced: #e6a97e;
     --bad: #f08a76; --bad-soft: #3a1a14;
   }
 
@@ -75,6 +75,8 @@
   .group[data-kind="numbers"] h2 { color: var(--numbers); }
   .group[data-kind="partial"] h2 { color: var(--partial); }
   .group[data-kind="initials"] h2 { color: var(--initials); }
+  .group[data-kind="tags"] h2 { color: var(--tags); }
+  .group[data-kind="spaced"] h2 { color: var(--spaced); }
 
   .item {
     display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
@@ -86,6 +88,7 @@
   .item[data-kind="wrap"] .txt { font-size: 15px; }
   .item[data-kind="emoji"] .txt { font-family: var(--body); font-size: 16px; }
   .item[data-kind="lingo"] .txt { font-family: var(--body); }
+  .item[data-kind="tags"] .txt { font-family: var(--body); }
   .item .tag { flex: 0 0 auto; font: 500 11px/1 var(--body); color: var(--muted); letter-spacing: .04em; }
   .item.copied { border-color: var(--accent); background: var(--accent-soft); }
 
@@ -103,7 +106,7 @@
 <div class="wrap">
   <header>
     <h1>Say It Sideways</h1>
-    <p>Type anything and get it back eight ways — misspelled, leetspeak, wrapped, emoji, other languages, numbers, reversed, initials. Tap any line to copy it.</p>
+    <p>Type anything and get it back ten ways — misspelled, leetspeak, wrapped, emoji, other languages, numbers, reversed, initials, tag words, spaced out. Tap any line to copy it.</p>
   </header>
 
   <div class="box">
@@ -121,10 +124,12 @@
       <button type="button" class="chip" data-kind="numbers" aria-pressed="true">Numbers</button>
       <button type="button" class="chip" data-kind="partial" aria-pressed="true">Reversed</button>
       <button type="button" class="chip" data-kind="initials" aria-pressed="true">Initials</button>
+      <button type="button" class="chip" data-kind="tags" aria-pressed="true">Tag words</button>
+      <button type="button" class="chip" data-kind="spaced" aria-pressed="true">Spaced out</button>
     </div>
     <div class="opts">
-      <label for="howmany">How many <input type="range" id="howmany" min="10" max="32" value="24"></label>
-      <span class="count" id="howmanyOut">24</span>
+      <label for="howmany">How many <input type="range" id="howmany" min="10" max="40" value="30"></label>
+      <span class="count" id="howmanyOut">30</span>
       <button type="button" class="chip" id="copyAll">Copy all</button>
     </div>
     <div class="err" id="err" hidden></div>
@@ -142,6 +147,8 @@
       <li><strong>Other languages</strong> — a word or two swapped into Spanish, French, Italian, German or Japanese while the rest stays English, so it always reads as a mix. It never translates the whole thing. Words come from a small built-in list; when none of yours are in it you get the <em>-ish</em> version instead, which bends one or two of your words into that language's shape — a joke accent, not real words.</li>
       <li><strong>Numbers</strong> — digits standing in for letters, but only in one place at a time: first letters, last letters, vowels, middles, every other one, or the lot.</li>
       <li><strong>Reversed &amp; clipped</strong> — backwards, each word backwards, word order flipped, half a word, vowels dropped, or every other letter.</li>
+      <li><strong>Tag words</strong> — a word like <em>aesthetic</em>, <em>vibes</em>, <em>mood</em> or <em>reference</em> stuck on the front, the back, or both ends.</li>
+      <li><strong>Spaced out</strong> — the letters pulled apart by dots, spaces, dashes, underscores, stars or slashes, plus the whole thing run together with no spaces.</li>
       <li><strong>Initials</strong> — the first letters, plain, dotted, spaced or slashed; the first two letters run together; and numeronyms, where the middle of a word becomes the count of letters it stands for, the way internationalization is written i18n.</li>
     </ul>
     <p>Everything is generated on your device, and Generate gives you a fresh set each time.</p>
@@ -151,7 +158,7 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const kinds = { misspell: true, leet: true, wrap: true, emoji: true, lingo: true, numbers: true, partial: true, initials: true };
+  const kinds = { misspell: true, leet: true, wrap: true, emoji: true, lingo: true, numbers: true, partial: true, initials: true, tags: true, spaced: true };
   const rnd = n => Math.floor(Math.random() * n);
   const pick = a => a[rnd(a.length)];
 
@@ -464,6 +471,38 @@
     ["with stops", t => words(t).map(w => w[0].toUpperCase()).join(" · ")]
   ];
 
+  // ---- tag words ----------------------------------------------------------
+  const TAGS = ["aesthetic", "vibes", "mood", "inspo", "reference", "concept",
+    "style", "energy", "core", "era", "edit", "season", "palette", "study"];
+  const TAG_STYLES = [
+    ["after", t => `${t} ${pick(TAGS)}`],
+    ["before", t => `${pick(TAGS)} ${t}`],
+    ["both ends", t => { const a = pick(TAGS); let b = pick(TAGS); 
+      for (let i = 0; i < 4 && b === a; i++) b = pick(TAGS);
+      return `${a} ${t} ${b}`; }],
+    ["two after", t => { const a = pick(TAGS); let b = pick(TAGS);
+      for (let i = 0; i < 4 && b === a; i++) b = pick(TAGS);
+      return `${t} ${a} ${b}`; }],
+    ["hashtagged", t => `${t} #${pick(TAGS)}`],
+    ["joined on", t => `${t}${pick(TAGS)}`],
+    ["dashed on", t => `${t} — ${pick(TAGS)}`]
+  ];
+
+  // ---- letters spaced out --------------------------------------------------
+  const spread = (t, sep) => t.replace(/[A-Za-z0-9]+/g, w => [...w].join(sep));
+  const SPACED_STYLES = [
+    ["dotted", t => spread(t, ".")],
+    ["spaced", t => spread(t, " ")],
+    ["dashed", t => spread(t, "-")],
+    ["underscored", t => spread(t, "_")],
+    ["middle dots", t => spread(t, "·")],
+    ["stars", t => spread(t, "*")],
+    ["slashed", t => spread(t, "/")],
+    ["wide spaced", t => spread(t, "  ")],
+    ["dotted all through", t => [...t].join(".")],
+    ["words joined", t => t.replace(/\s+/g, "")]
+  ];
+
   // ---- building the list ---------------------------------------------------
   function build(text, want) {
     const on = Object.keys(kinds).filter(k => kinds[k]);
@@ -529,6 +568,8 @@
     if (kinds.numbers) fromStyles("numbers", NUMBER_STYLES);
     if (kinds.partial) fromStyles("partial", PARTIAL_STYLES);
     if (kinds.initials) fromStyles("initials", INITIAL_STYLES);
+    if (kinds.tags) fromStyles("tags", TAG_STYLES, 3);
+    if (kinds.spaced) fromStyles("spaced", SPACED_STYLES);
     return out.slice(0, want);
   }
 
@@ -537,8 +578,9 @@
     host.innerHTML = "";
     const titles = { misspell: "Misspelled", leet: "Leetspeak", wrap: "Wrapped",
       emoji: "Emoji", lingo: "Other languages", numbers: "Numbers", partial: "Reversed & clipped",
-      initials: "Initials" };
-    for (const kind of ["misspell", "leet", "wrap", "emoji", "lingo", "numbers", "partial", "initials"]) {
+      initials: "Initials", tags: "Tag words", spaced: "Spaced out" };
+    for (const kind of ["misspell", "leet", "wrap", "emoji", "lingo", "numbers",
+      "partial", "initials", "tags", "spaced"]) {
       const mine = items.filter(i => i.kind === kind);
       if (!mine.length) continue;
       const g = document.createElement("section");
