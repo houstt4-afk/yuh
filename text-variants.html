@@ -137,7 +137,7 @@
       <li><strong>Leetspeak</strong> — letters replaced by lookalike digits. Light touches o and l only; heavy swaps everything it can and mixes the case.</li>
       <li><strong>Wrapped</strong> — the words left alone, framed in symbols and separators.</li>
       <li><strong>Emoji</strong> — an emoji after each word it knows, or in place of it, or sparkles threaded between the words.</li>
-      <li><strong>Other languages</strong> — common words swapped into Spanish, French, Italian, German or Japanese. Only words it has in its small built-in list change; everything else stays put, so this is a mix rather than a translation.</li>
+      <li><strong>Other languages</strong> — common words swapped into Spanish, French, Italian, German or Japanese from a built-in list, so it's a mix rather than a real translation. When a word isn't in the list you get the <em>-ish</em> version instead: the English bent into that language's shape, which is a joke accent and not real words.</li>
       <li><strong>Numbers</strong> — digits standing in for letters, but only in one place at a time: first letters, last letters, vowels, middles, every other one, or the lot.</li>
       <li><strong>Reversed &amp; clipped</strong> — backwards, each word backwards, word order flipped, half a word, vowels dropped, every other letter, or just the initials.</li>
     </ul>
@@ -283,24 +283,91 @@
     Spanish: { good: "bueno", morning: "mañana", night: "noche", day: "día", the: "el",
       my: "mi", and: "y", is: "es", love: "amor", friend: "amigo", water: "agua",
       food: "comida", coffee: "café", house: "casa", hello: "hola", yes: "sí", no: "no",
-      thanks: "gracias", time: "tiempo", life: "vida", sun: "sol", moon: "luna", fire: "fuego" },
+      thanks: "gracias", time: "tiempo", life: "vida", sun: "sol", moon: "luna", fire: "fuego",
+      big: "grande", small: "pequeño", new: "nuevo", old: "viejo", man: "hombre",
+      woman: "mujer", city: "ciudad", street: "calle", work: "trabajo", school: "escuela",
+      book: "libro", music: "música", dog: "perro", cat: "gato", beach: "playa",
+      money: "dinero", heart: "corazón", world: "mundo", today: "hoy", tomorrow: "mañana",
+      please: "por favor", why: "por qué", how: "cómo", what: "qué", where: "dónde" },
     French: { good: "bon", morning: "matin", night: "nuit", day: "jour", the: "le",
       my: "mon", and: "et", is: "est", love: "amour", friend: "ami", water: "eau",
       food: "nourriture", coffee: "café", house: "maison", hello: "bonjour", yes: "oui",
-      no: "non", thanks: "merci", time: "temps", life: "vie", sun: "soleil", moon: "lune", fire: "feu" },
+      no: "non", thanks: "merci", time: "temps", life: "vie", sun: "soleil", moon: "lune", fire: "feu",
+      big: "grand", small: "petit", new: "nouveau", old: "vieux", man: "homme",
+      woman: "femme", city: "ville", street: "rue", work: "travail", school: "école",
+      book: "livre", music: "musique", dog: "chien", cat: "chat", beach: "plage",
+      money: "argent", heart: "cœur", world: "monde", today: "aujourd'hui",
+      please: "s'il vous plaît", why: "pourquoi", how: "comment", what: "quoi", where: "où" },
     Italian: { good: "buono", morning: "mattina", night: "notte", day: "giorno", the: "il",
       my: "mio", and: "e", is: "è", love: "amore", friend: "amico", water: "acqua",
       food: "cibo", coffee: "caffè", house: "casa", hello: "ciao", yes: "sì", no: "no",
-      thanks: "grazie", time: "tempo", life: "vita", sun: "sole", moon: "luna", fire: "fuoco" },
+      thanks: "grazie", time: "tempo", life: "vita", sun: "sole", moon: "luna", fire: "fuoco",
+      big: "grande", small: "piccolo", new: "nuovo", old: "vecchio", man: "uomo",
+      woman: "donna", city: "città", street: "strada", work: "lavoro", school: "scuola",
+      book: "libro", music: "musica", dog: "cane", cat: "gatto", beach: "spiaggia",
+      money: "soldi", heart: "cuore", world: "mondo", today: "oggi",
+      please: "per favore", why: "perché", how: "come", what: "cosa", where: "dove" },
     German: { good: "gut", morning: "Morgen", night: "Nacht", day: "Tag", the: "der",
       my: "mein", and: "und", is: "ist", love: "Liebe", friend: "Freund", water: "Wasser",
       food: "Essen", coffee: "Kaffee", house: "Haus", hello: "hallo", yes: "ja", no: "nein",
-      thanks: "danke", time: "Zeit", life: "Leben", sun: "Sonne", moon: "Mond", fire: "Feuer" },
+      thanks: "danke", time: "Zeit", life: "Leben", sun: "Sonne", moon: "Mond", fire: "Feuer",
+      big: "groß", small: "klein", new: "neu", old: "alt", man: "Mann",
+      woman: "Frau", city: "Stadt", street: "Straße", work: "Arbeit", school: "Schule",
+      book: "Buch", music: "Musik", dog: "Hund", cat: "Katze", beach: "Strand",
+      money: "Geld", heart: "Herz", world: "Welt", today: "heute",
+      please: "bitte", why: "warum", how: "wie", what: "was", where: "wo" },
     Japanese: { good: "ii", morning: "asa", night: "yoru", day: "hi", my: "watashi no",
       and: "to", love: "ai", friend: "tomodachi", water: "mizu", food: "tabemono",
       coffee: "kōhī", house: "ie", hello: "konnichiwa", yes: "hai", no: "iie",
-      thanks: "arigatō", time: "jikan", life: "inochi", sun: "taiyō", moon: "tsuki", fire: "hi" }
+      thanks: "arigatō", time: "jikan", life: "inochi", sun: "taiyō", moon: "tsuki", fire: "hi",
+      big: "ōkii", small: "chiisai", new: "atarashii", old: "furui", man: "otoko",
+      woman: "onna", city: "machi", work: "shigoto", school: "gakkō", book: "hon",
+      music: "ongaku", dog: "inu", cat: "neko", beach: "hama", money: "okane",
+      heart: "kokoro", world: "sekai", today: "kyō", why: "naze", what: "nani", where: "doko" }
   };
+  // When none of the words are in the list, bend the English into that language's shape instead.
+  const STYLERS = {
+    Spanish: w => {
+      let x = w.toLowerCase().replace(/^s([bcdfgklmnpqrstvz])/, "es$1").replace(/ph/g, "f").replace(/th/g, "t");
+      if (/[aeiou]$/.test(x)) return x;
+      return x + (/[rlns]$/.test(x) ? "o" : "o");
+    },
+    Italian: w => {
+      let x = w.toLowerCase().replace(/th/g, "t").replace(/h/g, "");
+      return /[aeiou]$/.test(x) ? x + "ne" : x + (x.length > 4 ? "ino" : "i");
+    },
+    French: w => {
+      let x = w.toLowerCase().replace(/th/g, "th");
+      if (/[aeiou]$/.test(x)) return x + "ux";
+      if (/t$/.test(x)) return x + "e";
+      return x + "eau";
+    },
+    German: w => {
+      const x = w.toLowerCase();
+      return x[0].toUpperCase() + x.slice(1) + (/[aeiou]$/.test(x) ? "n" : "en");
+    },
+    Japanese: w => {                      // rough romaji: give every consonant a vowel
+      const x = w.toLowerCase().replace(/[^a-z]/g, "");
+      let out = "";
+      for (let i = 0; i < x.length; i++) {
+        const c = x[i], next = x[i + 1];
+        out += c;
+        if (!"aeiou".includes(c) && (!next || !"aeiou".includes(next))) {
+          if (c === "n" && !next) continue;                 // ん stands alone
+          out += "tdj".includes(c) ? "o" : "u";
+        }
+      }
+      return out;
+    }
+  };
+  function styleLang(text, lang) {
+    const f = STYLERS[lang];
+    return text.replace(/[A-Za-z]+/g, w => {
+      const out = f(w);
+      return /^[A-Z]/.test(w) && lang !== "German" ? out[0].toUpperCase() + out.slice(1) : out;
+    });
+  }
+
   function mixLang(text, lang, all) {
     const dict = LANGS[lang];
     const hits = [];
@@ -416,6 +483,10 @@
       for (const lang of names) {
         if (i >= per) break;
         if (add("lingo", `${lang}, all of it`, mixLang(text, lang, true))) i++;
+      }
+      for (const lang of names) {                 // never leave the group empty
+        if (i >= per) break;
+        if (add("lingo", `${lang}-ish`, styleLang(text, lang))) i++;
       }
     }
     if (kinds.numbers) fromStyles("numbers", NUMBER_STYLES);
